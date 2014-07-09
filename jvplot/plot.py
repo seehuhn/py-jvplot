@@ -1,0 +1,69 @@
+import os.path
+
+import cairocffi as cairo
+
+from .canvas import Canvas
+from .util import _convert_dim
+
+class JvPlot(Canvas):
+
+    def __init__(self, fname, width, height, res=72):
+        _, ext = os.path.splitext(fname)
+        if ext == '':
+            raise ValueError('file name "%s" lacks an extension' % fname)
+        else:
+            ext = ext[1:]
+
+        if ext != 'png':
+            res = 72
+        w = _convert_dim(width, res)
+        h = _convert_dim(height, res)
+        if ext == 'pdf':
+            surface = cairo.PDFSurface(fname, w, h)
+        elif ext == 'ps':
+            surface = cairo.PSSurface(fname, w, h)
+        elif ext == 'eps':
+            surface = cairo.PSSurface(fname, w, h)
+            surface.set_eps(True)
+        elif ext == 'png':
+            w = int(w + 0.5)
+            h = int(h + 0.5)
+            surface = cairo.ImageSurface(cairo.FORMAT_RGB24, w, h)
+        else:
+            raise ValueError('unsupported file type "%s"' % ext)
+
+        ctx = cairo.Context(surface)
+        # move the origin to the bottom left corner:
+        ctx.translate(0, h)
+        ctx.scale(1, -1)
+
+        ctx.set_line_join(cairo.LINE_JOIN_ROUND)
+        ctx.set_line_cap(cairo.LINE_CAP_ROUND)
+
+        if ext == 'png':
+            ctx.save()
+            ctx.set_source_rgb(1, 1, 1)
+            ctx.rectangle(0, 0, w, h)
+            ctx.fill()
+            ctx.restore()
+
+        super().__init__(ctx, 0, 0, w, h, res=res)
+        self.surface = surface
+        self.file_name = fname
+        self.file_type = ext
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
+    def __str__(self):
+        return '<JvPlot %.0fbpx%.0fbp "%s">' % (self.w, self.h, self.file_name)
+
+    def close(self):
+        if self.file_type == 'png':
+            self.surface.write_to_png(self.file_name)
+        else:
+            self.surface.finish()
+        self.surface = None
