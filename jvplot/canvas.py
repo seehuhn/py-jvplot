@@ -50,8 +50,10 @@ def _improve_range(r):
     return r
 
 class Canvas:
+    """The Canvas class."""
 
     def __init__(self, ctx, x, y, w, h, offset=0.0, scale=1.0, res=None):
+        """Allocate a new canvas."""
         self.ctx = ctx
         self.x = x
         self.y = y
@@ -65,6 +67,7 @@ class Canvas:
         return "<Canvas %.0fx%.0f%+.0f%+.0f>" % (self.w, self.h, self.x, self.y)
 
     def set_line_width(self, line_width):
+        """Set the line width."""
         self.ctx.set_line_width(_convert_dim(line_width, self.res))
 
     def set_range(self, x_range, y_range, aspect=None, smart=True):
@@ -72,13 +75,17 @@ class Canvas:
 
         Arguments:
 
-        x_range -- a pair of numbers, giving the minimal/maximal
-            x-coordinate of the data.
-        y_range -- a pair of numbers, giving the minimal/maximal
-            y-coordinate of the data.
-        aspect -- if not None, a number describing the ration between
-            vertical and horizontal scale.  If aspect>1, a circle in
-            data-space appears higher than wide on the canvas.
+        x_range
+            A pair of numbers, giving the minimal/maximal x-coordinate
+            of the data.
+        y_range
+            A pair of numbers, giving the minimal/maximal y-coordinate
+            of the data.
+        aspect
+            If not `None`, a number describing the ratio between
+            vertical and horizontal scale.  If `aspect > 1`, a circle
+            in data-space will appear higher than wide on the canvas.
+
         """
         x_range = _check_range(x_range)
         y_range = _check_range(y_range)
@@ -113,6 +120,7 @@ class Canvas:
         return x_range, y_range
 
     def add_padding(self, padding):
+        """Add extra padding around the edge of the canvas."""
         padding = _check_vec(padding, 4, True)
         p_top = _convert_dim(padding[0], self.res, self.h)
         p_right = _convert_dim(padding[1], self.res, self.w)
@@ -125,6 +133,10 @@ class Canvas:
 
     def get_viewport(self, width=None, height=None,
                      margin=None, border=0, padding=0):
+        """Get a new canvas representing a rectangular sub-region of the
+        current canvas.
+
+        """
         width = _convert_dim(width, self.res, self.w, allow_none=True)
         height = _convert_dim(height, self.res, self.h, allow_none=True)
 
@@ -209,6 +221,10 @@ class Canvas:
     def get_axes(self, x_range, y_range, aspect=None, smart=True,
                  width=None, height=None,
                  margin=None, border=None, padding=None):
+        """Draw a set of coordinate axes and get a new canvas representing the
+        data area inside the axes.
+
+        """
         if margin is None:
             margin = ["2mm", "2mm", "7mm", "14mm"]
         if border is None:
@@ -306,6 +322,7 @@ class Canvas:
     def scatter_plot(self, x, y=None, col=None, size=None, aspect=None,
                      smart=True, width=None, height=None, margin=None,
                      border=None, padding=None):
+        """Draw a scatter plot."""
         x, y = _check_coords(x, y)
         xmin = np.amin(x)
         xmax = np.amax(x)

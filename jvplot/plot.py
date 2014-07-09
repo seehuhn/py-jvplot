@@ -11,6 +11,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+"""Implementation of the JvPlot Class.
+"""
+
 import os.path
 
 import cairocffi as cairo
@@ -20,7 +23,11 @@ from .util import _convert_dim
 
 class JvPlot(Canvas):
 
+    """The JvPlot Class.
+    """
+
     def __init__(self, fname, width, height, res=72):
+        """Create a new plot."""
         _, ext = os.path.splitext(fname)
         if ext == '':
             raise ValueError('file name "%s" lacks an extension' % fname)
@@ -75,6 +82,10 @@ class JvPlot(Canvas):
         return '<JvPlot %.0fbpx%.0fbp "%s">' % (self.w, self.h, self.file_name)
 
     def close(self):
+        """Close the plot and write all outstanding changes to the underlying
+        file.
+
+        """
         if self.file_type == 'png':
             self.surface.write_to_png(self.file_name)
         else:
