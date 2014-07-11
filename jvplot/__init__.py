@@ -25,4 +25,4 @@ __author__ = 'Jochen Voss'
 __license__ = 'GPLv3+'
 __copyright__ = 'Copyright 2014 Jochen Voss'
 
-from .plot import JvPlot
+from .plot import Plot

@@ -18,12 +18,12 @@ import os.path
 
 import cairocffi as cairo
 
-from .canvas import Canvas
+from .canvas import Canvas, _prepare_context
 from .util import _convert_dim
 
-class JvPlot(Canvas):
+class Plot(Canvas):
 
-    """The JvPlot Class.
+    """The Plot Class repesents an image in a graphics file.
     """
 
     def __init__(self, fname, width, height, res=72):
@@ -56,9 +56,7 @@ class JvPlot(Canvas):
         # move the origin to the bottom left corner:
         ctx.translate(0, h)
         ctx.scale(1, -1)
-
-        ctx.set_line_join(cairo.LINE_JOIN_ROUND)
-        ctx.set_line_cap(cairo.LINE_CAP_ROUND)
+        _prepare_context(ctx)
 
         if ext == 'png':
             ctx.save()
@@ -67,7 +65,7 @@ class JvPlot(Canvas):
             ctx.fill()
             ctx.restore()
 
-        super().__init__(ctx, 0, 0, w, h, res=res)
+        super().__init__(ctx, 0, 0, w, h, res)
         self.surface = surface
         self.file_name = fname
         self.file_type = ext

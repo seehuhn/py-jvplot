@@ -19,6 +19,11 @@ import cairocffi as cairo
 
 from .util import _convert_dim
 from .util import _check_coords, _check_num_vec, _check_range, _check_vec
+from .param import get
+
+def _prepare_context(ctx):
+    ctx.set_line_join(cairo.LINE_JOIN_ROUND)
+    ctx.set_line_cap(cairo.LINE_CAP_ROUND)
 
 def _scales(x):
     step = int(np.log10(x))
@@ -52,26 +57,27 @@ def _improve_range(r):
 class Canvas:
     """The Canvas class."""
 
-    def __init__(self, ctx, x, y, w, h, offset=0.0, scale=1.0, res=None):
+    def __init__(self, ctx, x, y, w, h, res, style={}):
         """Allocate a new canvas."""
         self.ctx = ctx
         self.x = x
         self.y = y
         self.w = w
         self.h = h
-        self.offset = _check_num_vec(offset, 2, True)
-        self.scale = _check_num_vec(scale, 2, True)
         self.res = res
+        self.style = dict(style)
+
+        self.offset = None
+        self.scale = None
+        self.axes = None
 
     def __str__(self):
         return "<Canvas %.0fx%.0f%+.0f%+.0f>" % (self.w, self.h, self.x, self.y)
 
-    def set_line_width(self, line_width):
-        """Set the line width."""
-        self.ctx.set_line_width(_convert_dim(line_width, self.res))
-
     def set_range(self, x_range, y_range, aspect=None, smart=True):
-        """Set the transformation from data to canvas coordinates.
+        """Set the transformation from data to canvas coordinates.  This
+        method must be called before any data can be plotted onto the
+        canvas.
 
         Arguments:
 
@@ -131,8 +137,8 @@ class Canvas:
         self.y += p_bottom
         self.h -= p_bottom + p_top
 
-    def get_viewport(self, width=None, height=None,
-                     margin=None, border=0, padding=0):
+    def get_viewport(self, width=None, height=None, margin=None, border=0,
+                     padding=0, style={}):
         """Get a new canvas representing a rectangular sub-region of the
         current canvas.
 
@@ -204,24 +210,26 @@ class Canvas:
         # allocate a new drawing context for the viewport
         surface = self.ctx.get_target()
         ctx = cairo.Context(surface)
-        ctx.set_line_join(cairo.LINE_JOIN_ROUND)
-        ctx.set_line_cap(cairo.LINE_CAP_ROUND)
         ctx.set_matrix(self.ctx.get_matrix())
+        _prepare_context(ctx)
+
         x = self.x + m_left + border_width
         y = self.y + m_bottom + border_width
         w = p_left + width + p_right
         h = p_bottom + height + p_top
         ctx.rectangle(x, y, w, h)
         ctx.clip()
-        res = Canvas(ctx, x, y, w, h, res=self.res)
+
+        combined = dict(self.style)
+        combined.update(style)
+        res = Canvas(ctx, x, y, w, h, self.res, style=combined)
         res.add_padding([p_top / self.res, p_right / self.res,
                          p_bottom / self.res, p_left / self.res])
         return res, border_rect
 
-    def get_axes(self, x_range, y_range, aspect=None, smart=True,
-                 width=None, height=None,
-                 margin=None, border=None, padding=None):
-        """Draw a set of coordinate axes and get a new canvas representing the
+    def get_axes(self, x_range, y_range, aspect=None, smart=True, width=None,
+                 height=None, margin=None, border=None, padding=None, style={}):
+        """Draw a set of coordinate axes and return a new canvas representing the
         data area inside the axes.
 
         """
@@ -231,19 +239,24 @@ class Canvas:
             border = "1pt"
         if padding is None:
             padding = "2mm"
-        axes, rect = self.get_viewport(width, height, margin, border, padding)
+        axes, rect = self.get_viewport(width, height, margin, border, padding,
+                                       style=style)
 
         if smart:
             x_range = _improve_range(x_range)
             y_range = _improve_range(y_range)
         x_range, y_range = axes.set_range(x_range, y_range, aspect=aspect)
 
-        tick_width = _convert_dim(".8pt", res=self.res)
+        combined = dict(self.style)
+        combined.update(style)
+
+        h_tick_width = get('h_axis.tick_width', self.res, combined, axes.w, axes.h)
+        v_tick_width = get('v_axis.tick_width', self.res, combined, axes.w, axes.h)
         tick_length = _convert_dim("3pt", res=self.res)
         font_size = _convert_dim("10pt", res=self.res)
 
         self.ctx.save()
-        self.ctx.set_line_width(tick_width)
+        self.ctx.set_line_width(h_tick_width)
         self.ctx.set_line_cap(cairo.LINE_CAP_BUTT)
         self.ctx.set_font_matrix(
             cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
@@ -274,6 +287,7 @@ class Canvas:
                              rect[1] - tick_length - 12 / 72.27 * self.res)
             self.ctx.show_text(label)
 
+        self.ctx.set_line_width(v_tick_width)
         opt_spacing = best_spacing
         best_score = None
         for scale in _scales(y_range[1] - y_range[0]):
@@ -333,8 +347,6 @@ class Canvas:
                              margin=margin, border=border, padding=padding)
         if col is not None:
             axes.ctx.set_source_rgb(*col)
-        if size is not None:
-            axes.set_line_width(size)
         axes._make_dot_shape(x, y)
         axes.ctx.stroke()
         return axes
