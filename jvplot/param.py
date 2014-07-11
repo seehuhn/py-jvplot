@@ -16,22 +16,23 @@ from .util import _convert_dim
 # name: (type, default, inherits from, description)
 parameters = {
     'axis_font_size': ('dim', '$font_size', 'font size for axis labels'),
+    'axis_label_dist': ('dim', '3pt', 'default distance between axis labels and tick marks'),
     'axis_tick_length': ('dim', '3pt', 'length of axis tick marks'),
-    'axis_tick_width': ('dim', '$lw.medium', 'line width for axis tick marks'),
     'axis_tick_opt_spacing': ('dim', '2cm', 'optimal spacing for axis tick marks'),
+    'axis_tick_width': ('dim', '$lw_medium', 'line width for axis tick marks'),
     'axis_x_label_dist': ('dim', '$axis_label_dist', 'vertical distance between labels and tick marks on the x-axis'),
     'axis_y_label_dist': ('dim', '$axis_label_dist', 'horizontal distance between labels and tick marks on the y-axis'),
-    'axis_label_dist': ('dim', '3pt', 'default distance between axis labels and tick marks'),
     'font_size': ('dim', '10pt', 'default font size'),
-    'lw': ('dim', '$lw.medium', 'line width'),
-    'lw.medium': ('dim', '.8pt', 'default width for medium thick lines'),
-    'lw.thick': ('dim', '1.2pt', 'default width for thick lines'),
-    'lw.thin': ('dim', '.4pt', 'default width for thin lines'),
+    'lw': ('dim', '$lw_medium', 'line width'),
+    'lw_medium': ('dim', '.8pt', 'default width for medium thick lines'),
+    'lw_thick': ('dim', '1.2pt', 'default width for thick lines'),
+    'lw_thin': ('dim', '.4pt', 'default width for thin lines'),
     'margin': ('dim', '2mm', 'default margin around the plotting area'),
     'margin.bottom': ('height', '$margin', 'margin below the plotting area'),
     'margin.left': ('width', '$margin', 'margin to the left of the plotting area'),
     'margin.right': ('width', '$margin', 'margin to the right of the plotting area'),
     'margin.top': ('height', '$margin', 'margin above the plotting area'),
+    'plot_lw': ('dim', '$lw', 'default line width for plots'),
 }
 
 def get(name, res, style={}, parent_width=None, parent_height=None):

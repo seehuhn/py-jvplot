@@ -236,6 +236,20 @@ class Canvas:
                          p_bottom / self.res, p_left / self.res])
         return res, border_rect
 
+    def subplot(self, cols, rows, idx, padding=0, style={}):
+        if rows <= 0 or cols <= 0:
+            return ValueError('invalid %d by %d arrangement' % (cols, rows))
+        if not 0 <= idx < cols*rows:
+            tmpl = 'invalid index %d, not in range 0, ... %d'
+            raise ValueError(tmpl % (idx, cols*rows-1))
+        i = idx // cols
+        j = idx % cols
+        dw = self.w / cols / self.res
+        dh = self.h / rows / self.res
+        return self.get_viewport(width=dw, height=dh,
+                                 margin=[i*dh, None, None, j*dw],
+                                 padding=padding)
+
     def get_axes(self, x_range, y_range, aspect=None, smart=True, width=None,
                  height=None, margin=None, border=None, padding=None, style={}):
         """Draw a set of coordinate axes and return a new canvas representing
@@ -343,7 +357,32 @@ class Canvas:
             self.ctx.move_to(x[i], y[i])
             self.ctx.close_path()
 
-    def scatter_plot(self, x, y=None, col=None, size=None, aspect=None,
+    def plot(self, x, y=None, aspect=None,
+             smart=True, width=None, height=None, margin=None,
+             border=None, padding=None, style={}):
+        """Draw a line plot."""
+        x, y = _check_coords(x, y)
+        xmin = np.amin(x)
+        xmax = np.amax(x)
+        ymin = np.amin(y)
+        ymax = np.amax(y)
+        axes = self.get_axes((xmin, xmax), (ymin, ymax), aspect=aspect,
+                             smart=smart, width=width, height=height,
+                             margin=margin, border=border, padding=padding,
+                             style=style)
+
+        style = axes._set_defaults(style)
+
+        axes.ctx.save()
+        lw = get('plot_lw', axes.res, style)
+        axes.ctx.set_line_width(lw)
+        axes._make_line_shape(x, y)
+        axes.ctx.stroke()
+        axes.ctx.restore()
+
+        return axes
+
+    def scatter_plot(self, x, y=None, size=None, aspect=None,
                      smart=True, width=None, height=None, margin=None,
                      border=None, padding=None, style={}):
         """Draw a scatter plot."""
@@ -356,8 +395,6 @@ class Canvas:
                              smart=smart, width=width, height=height,
                              margin=margin, border=border, padding=padding,
                              style=style)
-        if col is not None:
-            axes.ctx.set_source_rgb(*col)
         axes._make_dot_shape(x, y)
         axes.ctx.stroke()
         return axes
