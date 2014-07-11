@@ -15,9 +15,14 @@ from .util import _convert_dim
 
 # name: (type, default, inherits from, description)
 parameters = {
-    'axis.tick_width': ('dim', '$lw.medium', 'line width for axes tick marks'),
-    'h_axis.tick_width': ('width', '$axis.tick_width', 'line width for tick marks on horizontal axes'),
-    'v_axis.tick_width': ('height', '$axis.tick_width', 'line width for tick marks on vertical axes'),
+    'axis_font_size': ('dim', '$font_size', 'font size for axis labels'),
+    'axis_tick_length': ('dim', '3pt', 'length of axis tick marks'),
+    'axis_tick_width': ('dim', '$lw.medium', 'line width for axis tick marks'),
+    'axis_tick_opt_spacing': ('dim', '2cm', 'optimal spacing for axis tick marks'),
+    'axis_x_label_dist': ('dim', '$axis_label_dist', 'vertical distance between labels and tick marks on the x-axis'),
+    'axis_y_label_dist': ('dim', '$axis_label_dist', 'horizontal distance between labels and tick marks on the y-axis'),
+    'axis_label_dist': ('dim', '3pt', 'default distance between axis labels and tick marks'),
+    'font_size': ('dim', '10pt', 'default font size'),
     'lw': ('dim', '$lw.medium', 'line width'),
     'lw.medium': ('dim', '.8pt', 'default width for medium thick lines'),
     'lw.thick': ('dim', '1.2pt', 'default width for thick lines'),

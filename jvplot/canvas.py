@@ -11,7 +11,13 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""the Canvas class for use in the JvPlot package"""
+"""The Canvas class
+----------------
+
+The canvas class implements all drawing operations supported by the
+JvPlot package.
+
+"""
 
 import numpy as np
 
@@ -73,6 +79,11 @@ class Canvas:
 
     def __str__(self):
         return "<Canvas %.0fx%.0f%+.0f%+.0f>" % (self.w, self.h, self.x, self.y)
+
+    def _set_defaults(self, style):
+        res = dict(self.style)
+        res.update(style)
+        return res
 
     def set_range(self, x_range, y_range, aspect=None, smart=True):
         """Set the transformation from data to canvas coordinates.  This
@@ -220,17 +231,15 @@ class Canvas:
         ctx.rectangle(x, y, w, h)
         ctx.clip()
 
-        combined = dict(self.style)
-        combined.update(style)
-        res = Canvas(ctx, x, y, w, h, self.res, style=combined)
+        res = Canvas(ctx, x, y, w, h, self.res, style=self._set_defaults(style))
         res.add_padding([p_top / self.res, p_right / self.res,
                          p_bottom / self.res, p_left / self.res])
         return res, border_rect
 
     def get_axes(self, x_range, y_range, aspect=None, smart=True, width=None,
                  height=None, margin=None, border=None, padding=None, style={}):
-        """Draw a set of coordinate axes and return a new canvas representing the
-        data area inside the axes.
+        """Draw a set of coordinate axes and return a new canvas representing
+        the data area inside the axes.
 
         """
         if margin is None:
@@ -247,21 +256,22 @@ class Canvas:
             y_range = _improve_range(y_range)
         x_range, y_range = axes.set_range(x_range, y_range, aspect=aspect)
 
-        combined = dict(self.style)
-        combined.update(style)
+        style = self._set_defaults(style)
 
-        h_tick_width = get('h_axis.tick_width', self.res, combined, axes.w, axes.h)
-        v_tick_width = get('v_axis.tick_width', self.res, combined, axes.w, axes.h)
-        tick_length = _convert_dim("3pt", res=self.res)
-        font_size = _convert_dim("10pt", res=self.res)
+        tick_width = get('axis_tick_width', self.res, style)
+        tick_length = get('axis_tick_length', self.res, style)
+        font_size = get('axis_font_size', self.res, style)
 
         self.ctx.save()
-        self.ctx.set_line_width(h_tick_width)
         self.ctx.set_line_cap(cairo.LINE_CAP_BUTT)
         self.ctx.set_font_matrix(
             cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
+        self.ctx.set_line_width(tick_width)
 
-        opt_spacing = min(axes.w / 4, _convert_dim("2cm", axes.res))
+        ascent, descent, _, _, _ = self.ctx.font_extents()
+
+        opt_spacing = min(axes.w / 4,
+                          get('axis_tick_opt_spacing', axes.res, style))
         best_score = None
         for scale in _scales(x_range[1] - x_range[0]):
             steps = _steps(x_range[0], x_range[1], scale)
@@ -279,15 +289,15 @@ class Canvas:
                 best_steps = steps
                 best_labels = labels
                 best_exts = exts
+        x_label_dist = get('axis_x_label_dist', self.res, style)
         for step, label, ext in zip(best_steps, best_labels, best_exts):
             x = axes.offset[0] + axes.scale[0] * step
             self.ctx.move_to(x, rect[1] - tick_length)
             self.ctx.line_to(x, rect[1] + tick_length)
             self.ctx.move_to(x - .5 * ext[4],
-                             rect[1] - tick_length - 12 / 72.27 * self.res)
+                             rect[1] - .5 * tick_length - x_label_dist - ascent)
             self.ctx.show_text(label)
 
-        self.ctx.set_line_width(v_tick_width)
         opt_spacing = best_spacing
         best_score = None
         for scale in _scales(y_range[1] - y_range[0]):
@@ -306,13 +316,13 @@ class Canvas:
                 best_steps = steps
                 best_labels = labels
                 best_exts = exts
+        y_label_dist = get('axis_y_label_dist', self.res, style)
         for step, label, ext in zip(best_steps, best_labels, best_exts):
             y = axes.offset[1] + axes.scale[1] * step
             self.ctx.move_to(rect[0] - tick_length, y)
             self.ctx.line_to(rect[0] + tick_length, y)
-            offs = 3 / 72.27 * self.res
-            self.ctx.move_to(rect[0] - tick_length - offs - ext[4],
-                             y - 4 / 72.27 * self.res)
+            self.ctx.move_to(rect[0] - tick_length - y_label_dist - ext[4],
+                             y - .5*(ascent - descent))
             self.ctx.show_text(label)
         self.ctx.stroke()
         self.ctx.restore()
@@ -335,7 +345,7 @@ class Canvas:
 
     def scatter_plot(self, x, y=None, col=None, size=None, aspect=None,
                      smart=True, width=None, height=None, margin=None,
-                     border=None, padding=None):
+                     border=None, padding=None, style={}):
         """Draw a scatter plot."""
         x, y = _check_coords(x, y)
         xmin = np.amin(x)
@@ -344,7 +354,8 @@ class Canvas:
         ymax = np.amax(y)
         axes = self.get_axes((xmin, xmax), (ymin, ymax), aspect=aspect,
                              smart=smart, width=width, height=height,
-                             margin=margin, border=border, padding=padding)
+                             margin=margin, border=border, padding=padding,
+                             style=style)
         if col is not None:
             axes.ctx.set_source_rgb(*col)
         axes._make_dot_shape(x, y)

@@ -11,7 +11,11 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""Implementation of the JvPlot Class.
+"""
+Implementation of the JvPlot Class
+----------------------------------
+
+This module implements the main entry point for the JvPlot package.
 """
 
 import os.path
