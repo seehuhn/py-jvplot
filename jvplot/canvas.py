@@ -32,6 +32,7 @@ def _prepare_context(ctx):
     ctx.set_line_cap(cairo.LINE_CAP_ROUND)
 
 def _scales(x):
+    "return decreasing scales smaller than x"
     step = int(np.log10(x))
     while True:
         base = 10**step
@@ -44,21 +45,25 @@ def _scales(x):
         yield base
         step -= 1
 
-def _steps(a, b, scale):
-    step_a = int(np.ceil(a / scale - 0.001))
-    step_b = int(np.ceil(b / scale + 0.001))
-    return list(np.arange(step_a, step_b) * scale)
-
-def _improve_range(r):
-    a, b = r
+def _try_steps(a, b, max_steps=13):
     for scale in _scales(b-a):
-        if b - a > 10 * scale:
+        step_a = int(np.floor(a / scale + 0.01))
+        step_b = int(np.ceil(b / scale - 0.01))
+        steps = list(np.arange(step_a, step_b+1) * scale)
+        if len(steps) > max_steps + 2:
             break
-        a2 = np.floor(a / scale) * scale
-        b2 = np.ceil(b / scale) * scale
-        if b2 - a2 < 1.2 * (b - a):
-            return (a2, b2)
-    return r
+        if len(steps) <= max_steps:
+            yield (step_a*scale, step_b*scale), steps
+        if len(steps) < 3:
+            continue
+        can_drop_left = (steps[1] - a) < .5 * scale
+        can_drop_right = (b - steps[-2]) < .5 * scale
+        if len(steps) <= max_steps+1 and can_drop_left:
+            yield (a, step_b*scale), steps[1:]
+        if len(steps) <= max_steps+1 and can_drop_right:
+            yield (step_a*scale, b), steps[:-1]
+        if 3 < len(steps) <= max_steps+2 and can_drop_left and can_drop_right:
+            yield (a, b), steps[1:-1]
 
 class Canvas:
     """The Canvas class."""
@@ -85,57 +90,6 @@ class Canvas:
         res.update(style)
         return res
 
-    def set_range(self, x_range, y_range, aspect=None, smart=True):
-        """Set the transformation from data to canvas coordinates.  This
-        method must be called before any data can be plotted onto the
-        canvas.
-
-        Arguments:
-
-        x_range
-            A pair of numbers, giving the minimal/maximal x-coordinate
-            of the data.
-        y_range
-            A pair of numbers, giving the minimal/maximal y-coordinate
-            of the data.
-        aspect
-            If not `None`, a number describing the ratio between
-            vertical and horizontal scale.  If `aspect > 1`, a circle
-            in data-space will appear higher than wide on the canvas.
-
-        """
-        x_range = _check_range(x_range)
-        y_range = _check_range(y_range)
-
-        sx = self.w / (x_range[1] - x_range[0])
-        sy = self.h / (y_range[1] - y_range[0])
-        if smart and aspect is None and sx < 1.1*sy and sy < 1.1*sx:
-            aspect = 1
-        if aspect is not None:
-            if sx * aspect > sy:
-                # we want aspect * sx == sy, so we have to widen x_range
-                x_width = aspect * self.w / sy
-                x_inc = x_width - (x_range[1] - x_range[0])
-                x_range = (x_range[0] - .5*x_inc, x_range[1] + .5*x_inc)
-            else:
-                # we want aspect * sx == sy, so we have to widen y_range
-                y_width = self.h / aspect / sx
-                y_inc = y_width - (y_range[1] - y_range[0])
-                y_range = (y_range[0] - .5*y_inc, y_range[1] + .5*y_inc)
-
-        # The horizontal scale and offset are determined by the
-        # following two equations:
-        #     x_range[0] * x_scale + x_offset = x
-        #     x_range[1] * x_scale + x_offset = x + w
-        x_scale = self.w / (x_range[1] - x_range[0])
-        x_offset = self.x - x_range[0] * x_scale
-        # The vertical coordinates are similar:
-        y_scale = self.h / (y_range[1] - y_range[0])
-        y_offset = self.y - y_range[0] * y_scale
-        self.offset = (x_offset, y_offset)
-        self.scale = (x_scale, y_scale)
-        return x_range, y_range
-
     def add_padding(self, padding):
         """Add extra padding around the edge of the canvas."""
         padding = _check_vec(padding, 4, True)
@@ -148,12 +102,57 @@ class Canvas:
         self.y += p_bottom
         self.h -= p_bottom + p_top
 
-    def get_viewport(self, width=None, height=None, margin=None, border=0,
-                     padding=0, style={}):
-        """Get a new canvas representing a rectangular sub-region of the
-        current canvas.
+    def set_limits(self, x_lim, y_lim, aspect=None):
+        """Set the transformation from data to canvas coordinates.  This
+        method must be called before any data can be plotted onto the
+        canvas.
+
+        Arguments
+        ---------
+
+        x_lim
+            A pair of numbers, giving the minimal/maximal x-coordinate
+            of the data.
+        y_lim
+            A pair of numbers, giving the minimal/maximal y-coordinate
+            of the data.
+        aspect
+            If not `None`, a number describing the ratio between
+            vertical and horizontal scale.  If `aspect > 1`, a circle
+            in data-space will appear higher than wide on the canvas.
 
         """
+        x_lim = _check_range(x_lim)
+        y_lim = _check_range(y_lim)
+
+        sx = self.w / (x_lim[1] - x_lim[0])
+        sy = self.h / (y_lim[1] - y_lim[0])
+        if aspect is not None:
+            if sx * aspect > sy:
+                # we want aspect * sx == sy, so we have to widen x_lim
+                x_width = aspect * self.w / sy
+                x_inc = x_width - (x_lim[1] - x_lim[0])
+                x_lim = (x_lim[0] - .5*x_inc, x_lim[1] + .5*x_inc)
+            else:
+                # we want aspect * sx == sy, so we have to widen y_lim
+                y_width = self.h / aspect / sx
+                y_inc = y_width - (y_lim[1] - y_lim[0])
+                y_lim = (y_lim[0] - .5*y_inc, y_lim[1] + .5*y_inc)
+
+        # The horizontal scale and offset are determined by the
+        # following two equations:
+        #     x_lim[0] * x_scale + x_offset = x
+        #     x_lim[1] * x_scale + x_offset = x + w
+        x_scale = self.w / (x_lim[1] - x_lim[0])
+        x_offset = self.x - x_lim[0] * x_scale
+        # The vertical coordinates are similar:
+        y_scale = self.h / (y_lim[1] - y_lim[0])
+        y_offset = self.y - y_lim[0] * y_scale
+        self.offset = (x_offset, y_offset)
+        self.scale = (x_scale, y_scale)
+        return x_lim, y_lim
+
+    def _viewport(self, width, height, margin, border, padding, style):
         width = _convert_dim(width, self.res, self.w, allow_none=True)
         height = _convert_dim(height, self.res, self.h, allow_none=True)
 
@@ -236,6 +235,15 @@ class Canvas:
                          p_bottom / self.res, p_left / self.res])
         return res, border_rect
 
+    def viewport(self, width=None, height=None, margin=None, border=0,
+                 padding=0, style={}):
+        """Get a new canvas representing a rectangular sub-region of the
+        current canvas.
+
+        """
+        res, _ = self._viewport(width, height, margin, border, padding, style)
+        return res
+
     def subplot(self, cols, rows, idx, padding=0, style={}):
         if rows <= 0 or cols <= 0:
             return ValueError('invalid %d by %d arrangement' % (cols, rows))
@@ -246,12 +254,91 @@ class Canvas:
         j = idx % cols
         dw = self.w / cols / self.res
         dh = self.h / rows / self.res
-        return self.get_viewport(width=dw, height=dh,
-                                 margin=[i*dh, None, None, j*dw],
-                                 padding=padding)
+        return self.viewport(width=dw, height=dh,
+                             margin=[i*dh, None, None, j*dw],
+                             padding=padding)
 
-    def get_axes(self, x_range, y_range, aspect=None, smart=True, width=None,
-                 height=None, margin=None, border=None, padding=None, style={}):
+    def _layout_labels(self, x_lim, y_lim, aspect, font_ctx):
+        opt_spacing = min(self.w / 2,
+                          self.h / 2,
+                          get('axis_tick_opt_spacing', self.res, self.style))
+
+        x_label_sep = get('axis_x_label_sep', self.res, self.style)
+        font_extents = font_ctx.font_extents()
+        if aspect is None:
+            # horizontal axis
+            best_pn = np.inf
+            for lim, steps in _try_steps(*x_lim):
+                tick_spacing = self.w * (steps[1]-steps[0]) / (lim[1]-lim[0])
+                labels = ["%g" % pos for pos in steps]
+                exts = [font_ctx.text_extents(lab) for lab in labels]
+                min_gap = min(tick_spacing - .5*(exts[i-1][4] + exts[i][4])
+                              for i in range(1, len(labels)))
+                if min_gap < x_label_sep:
+                    # labels would overlap -> don't consider this choice
+                    continue
+
+                pn = []
+                # penalty for sub-optimal tick spacing:
+                pn.append(abs(np.log(tick_spacing / opt_spacing)))
+                # penalty for wasting plotting area:
+                pn.append(np.log((lim[1] - lim[0]) / (x_lim[1] - x_lim[0])))
+                # penalty for data extending beyond the labels on the left:
+                pn.append(max((steps[0] - x_lim[0]) / (steps[1] - steps[0]), 0))
+                # penalty for data extending beyond the labels on the right:
+                pn.append(max((x_lim[-1] - steps[-1]) / (steps[1] - steps[0]), 0))
+                pns = np.array([1.0, 3.0, 1.0, 1.0]).dot(pn)
+                print(pns, pn, labels)
+                if pns < best_pn:
+                    best_pn = pns
+                    best_xlim = lim
+                    best_xsteps = steps
+                    best_xlabels = labels
+
+            # vertical axis
+            best_pn = np.inf
+            for lim, steps in _try_steps(*y_lim):
+                tick_spacing = self.h * (steps[1]-steps[0]) / (lim[1]-lim[0])
+                labels = ["%g" % pos for pos in steps]
+                exts = [font_ctx.text_extents(lab) for lab in labels]
+                if tick_spacing < font_extents[2]:
+                    # labels would overlap -> don't consider this choice
+                    break
+
+                pn = []
+                # penalty for sub-optimal tick spacing:
+                pn.append(abs(np.log(tick_spacing / opt_spacing)))
+                # penalty for wasting plotting area:
+                pn.append(np.log((lim[1] - lim[0]) / (y_lim[1] - y_lim[0])))
+                # penalty for data extending beyond the labels on the left:
+                pn.append(max((steps[0] - y_lim[0]) / (steps[1] - steps[0]), 0))
+                # penalty for data extending beyond the labels on the right:
+                pn.append(max((y_lim[-1] - steps[-1]) / (steps[1] - steps[0]), 0))
+                pns = np.array([1.0, 3.0, 1.0, 1.0]).dot(pn)
+                if pns < best_pn:
+                    best_pn = pns
+                    best_ylim = lim
+                    best_ysteps = steps
+                    best_ylabels = labels
+        elif (x_lim[1] - x_lim[0]) / self.w < aspect * (y_lim[1] - y_lim[0]) / self.h:
+            # widen x_lim to keep the aspect ratio
+            x_width = aspect * self.w * (y_lim[1] - y_lim[0]) / self.h
+            x_inc = x_width - (x_lim[1] - x_lim[0])
+            x_lim_asp = (x_lim[0] - .5*x_inc, x_lim[1] + .5*x_inc)
+            pass
+        else:
+            # widen y_lim to keep the aspect ratio
+            y_width = self.h * (x_lim[1] - x_lim[0]) / self.w / aspect
+            y_inc = y_width - (y_lim[1] - y_lim[0])
+            y_lim_asp = (y_lim[0] - .5*y_inc, y_lim[1] + .5*y_inc)
+            pass
+        return [
+            best_xlim, zip(best_xsteps, best_xlabels),
+            best_ylim, zip(best_ysteps, best_ylabels),
+        ]
+
+    def get_axes(self, x_lim, y_lim, aspect=None, width=None, height=None,
+                 margin=None, border=None, padding=None, style={}):
         """Draw a set of coordinate axes and return a new canvas representing
         the data area inside the axes.
 
@@ -259,85 +346,43 @@ class Canvas:
         if margin is None:
             margin = ["2mm", "2mm", "7mm", "14mm"]
         if border is None:
-            border = "1pt"
+            border = get('axis_lw', self.res, style) / self.res
         if padding is None:
             padding = "2mm"
-        axes, rect = self.get_viewport(width, height, margin, border, padding,
-                                       style=style)
+        axes, rect = self._viewport(width, height, margin, border, padding,
+                                    style)
 
-        if smart:
-            x_range = _improve_range(x_range)
-            y_range = _improve_range(y_range)
-        x_range, y_range = axes.set_range(x_range, y_range, aspect=aspect)
-
-        style = self._set_defaults(style)
-
-        tick_width = get('axis_tick_width', self.res, style)
-        tick_length = get('axis_tick_length', self.res, style)
-        font_size = get('axis_font_size', self.res, style)
-
+        tick_width = get('axis_tick_width', self.res, axes.style)
+        tick_length = get('axis_tick_length', self.res, axes.style)
+        font_size = get('axis_font_size', self.res, axes.style)
         self.ctx.save()
         self.ctx.set_line_cap(cairo.LINE_CAP_BUTT)
         self.ctx.set_font_matrix(
             cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
         self.ctx.set_line_width(tick_width)
 
+        x_lim, x_labels, y_lim, y_labels = axes._layout_labels(
+            x_lim, y_lim, aspect, self.ctx)
+        axes.set_limits(x_lim, y_lim)
         ascent, descent, _, _, _ = self.ctx.font_extents()
-
-        opt_spacing = min(axes.w / 4,
-                          get('axis_tick_opt_spacing', axes.res, style))
-        best_score = None
-        for scale in _scales(x_range[1] - x_range[0]):
-            steps = _steps(x_range[0], x_range[1], scale)
-
-            labels = ["%g" % x for x in steps]
-            exts = [self.ctx.text_extents(x) for x in labels]
-
-            spacing = axes.scale[0] * scale
-            if max(e[4] for e in exts) >= spacing and best_score is not None:
-                break
-            score = np.abs(np.log(spacing / opt_spacing))
-            if best_score is None or score < best_score:
-                best_score = score
-                best_spacing = spacing
-                best_steps = steps
-                best_labels = labels
-                best_exts = exts
         x_label_dist = get('axis_x_label_dist', self.res, style)
-        for step, label, ext in zip(best_steps, best_labels, best_exts):
-            x = axes.offset[0] + axes.scale[0] * step
-            self.ctx.move_to(x, rect[1] - tick_length)
-            self.ctx.line_to(x, rect[1] + tick_length)
-            self.ctx.move_to(x - .5 * ext[4],
+        for x_pos, x_lab in x_labels:
+            x_pos = axes.offset[0] + x_pos * axes.scale[0]
+            ext = self.ctx.text_extents(x_lab)
+            self.ctx.move_to(x_pos, rect[1] - tick_length)
+            self.ctx.line_to(x_pos, rect[1] + tick_length)
+            self.ctx.move_to(x_pos - .5 * ext[4],
                              rect[1] - .5 * tick_length - x_label_dist - ascent)
-            self.ctx.show_text(label)
-
-        opt_spacing = best_spacing
-        best_score = None
-        for scale in _scales(y_range[1] - y_range[0]):
-            steps = _steps(y_range[0], y_range[1], scale)
-
-            labels = ["%g" % x for x in steps]
-            exts = [self.ctx.text_extents(x) for x in labels]
-
-            spacing = axes.scale[1]*scale
-            if max(e[3] for e in exts) >= spacing and best_score is not None:
-                break
-            score = np.abs(np.log(spacing / opt_spacing))
-            if best_score is None or score < best_score:
-                best_score = score
-                best_spacing = spacing
-                best_steps = steps
-                best_labels = labels
-                best_exts = exts
+            self.ctx.show_text(x_lab)
         y_label_dist = get('axis_y_label_dist', self.res, style)
-        for step, label, ext in zip(best_steps, best_labels, best_exts):
-            y = axes.offset[1] + axes.scale[1] * step
-            self.ctx.move_to(rect[0] - tick_length, y)
-            self.ctx.line_to(rect[0] + tick_length, y)
+        for y_pos, y_lab in y_labels:
+            y_pos = axes.offset[1] + y_pos * axes.scale[1]
+            ext = self.ctx.text_extents(y_lab)
+            self.ctx.move_to(rect[0] - tick_length, y_pos)
+            self.ctx.line_to(rect[0] + tick_length, y_pos)
             self.ctx.move_to(rect[0] - tick_length - y_label_dist - ext[4],
-                             y - .5*(ascent - descent))
-            self.ctx.show_text(label)
+                             y_pos - .5*(ascent - descent))
+            self.ctx.show_text(y_lab)
         self.ctx.stroke()
         self.ctx.restore()
 
@@ -357,9 +402,8 @@ class Canvas:
             self.ctx.move_to(x[i], y[i])
             self.ctx.close_path()
 
-    def plot(self, x, y=None, aspect=None,
-             smart=True, width=None, height=None, margin=None,
-             border=None, padding=None, style={}):
+    def plot(self, x, y=None, aspect=None, width=None, height=None,
+             margin=None, border=None, padding=None, style={}):
         """Draw a line plot."""
         x, y = _check_coords(x, y)
         xmin = np.amin(x)
@@ -367,9 +411,8 @@ class Canvas:
         ymin = np.amin(y)
         ymax = np.amax(y)
         axes = self.get_axes((xmin, xmax), (ymin, ymax), aspect=aspect,
-                             smart=smart, width=width, height=height,
-                             margin=margin, border=border, padding=padding,
-                             style=style)
+                             width=width, height=height, margin=margin,
+                             border=border, padding=padding, style=style)
 
         style = axes._set_defaults(style)
 
@@ -382,9 +425,9 @@ class Canvas:
 
         return axes
 
-    def scatter_plot(self, x, y=None, size=None, aspect=None,
-                     smart=True, width=None, height=None, margin=None,
-                     border=None, padding=None, style={}):
+    def scatter_plot(self, x, y=None, size=None, aspect=None, width=None,
+                     height=None, margin=None, border=None, padding=None,
+                     style={}):
         """Draw a scatter plot."""
         x, y = _check_coords(x, y)
         xmin = np.amin(x)
@@ -392,9 +435,8 @@ class Canvas:
         ymin = np.amin(y)
         ymax = np.amax(y)
         axes = self.get_axes((xmin, xmax), (ymin, ymax), aspect=aspect,
-                             smart=smart, width=width, height=height,
-                             margin=margin, border=border, padding=padding,
-                             style=style)
+                             width=width, height=height, margin=margin,
+                             border=border, padding=padding, style=style)
         axes._make_dot_shape(x, y)
         axes.ctx.stroke()
         return axes
