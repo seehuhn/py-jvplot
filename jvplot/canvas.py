@@ -45,25 +45,23 @@ def _scales(x):
         yield base
         step -= 1
 
-def _try_steps(a, b, max_steps=13):
+def _try_steps(a, b):
     for scale in _scales(b-a):
         step_a = int(np.floor(a / scale + 0.01))
         step_b = int(np.ceil(b / scale - 0.01))
         steps = list(np.arange(step_a, step_b+1) * scale)
-        if len(steps) > max_steps + 2:
-            break
-        if len(steps) <= max_steps:
-            yield (step_a*scale, step_b*scale), steps
-        if len(steps) < 3:
-            continue
-        can_drop_left = (steps[1] - a) < .5 * scale
-        can_drop_right = (b - steps[-2]) < .5 * scale
-        if len(steps) <= max_steps+1 and can_drop_left:
-            yield (a, step_b*scale), steps[1:]
-        if len(steps) <= max_steps+1 and can_drop_right:
-            yield (step_a*scale, b), steps[:-1]
-        if 3 < len(steps) <= max_steps+2 and can_drop_left and can_drop_right:
+
+        n = len(steps)
+        can_drop_left = n > 2 and (steps[1] - a) < .5 * scale
+        can_drop_right = n > 2 and (b - steps[-2]) < .5 * scale
+        if n > 3 and can_drop_left and can_drop_right:
             yield (a, b), steps[1:-1]
+        if n > 2 and can_drop_left:
+            yield (a, step_b*scale), steps[1:]
+        if n > 2 and can_drop_right:
+            yield (step_a*scale, b), steps[:-1]
+        if n > 1:
+            yield (step_a*scale, step_b*scale), steps
 
 class Canvas:
     """The Canvas class."""
@@ -268,7 +266,10 @@ class Canvas:
         if aspect is None:
             # horizontal axis
             best_pn = np.inf
+            stop = 3
             for lim, steps in _try_steps(*x_lim):
+                if stop < 0:
+                    break
                 tick_spacing = self.w * (steps[1]-steps[0]) / (lim[1]-lim[0])
                 labels = ["%g" % pos for pos in steps]
                 exts = [font_ctx.text_extents(lab) for lab in labels]
@@ -276,6 +277,7 @@ class Canvas:
                               for i in range(1, len(labels)))
                 if min_gap < x_label_sep:
                     # labels would overlap -> don't consider this choice
+                    stop -= 1
                     continue
 
                 pn = []
@@ -288,16 +290,20 @@ class Canvas:
                 # penalty for data extending beyond the labels on the right:
                 pn.append(max((x_lim[-1] - steps[-1]) / (steps[1] - steps[0]), 0))
                 pns = np.array([1.0, 3.0, 1.0, 1.0]).dot(pn)
-                print(pns, pn, labels)
                 if pns < best_pn:
                     best_pn = pns
                     best_xlim = lim
                     best_xsteps = steps
                     best_xlabels = labels
+                else:
+                    stop -= 1
 
             # vertical axis
             best_pn = np.inf
+            stop = 3
             for lim, steps in _try_steps(*y_lim):
+                if stop < 0:
+                    break
                 tick_spacing = self.h * (steps[1]-steps[0]) / (lim[1]-lim[0])
                 labels = ["%g" % pos for pos in steps]
                 exts = [font_ctx.text_extents(lab) for lab in labels]
@@ -320,18 +326,17 @@ class Canvas:
                     best_ylim = lim
                     best_ysteps = steps
                     best_ylabels = labels
+                else:
+                    stop -= 1
         elif (x_lim[1] - x_lim[0]) / self.w < aspect * (y_lim[1] - y_lim[0]) / self.h:
             # widen x_lim to keep the aspect ratio
-            x_width = aspect * self.w * (y_lim[1] - y_lim[0]) / self.h
+            x_width = self.w / self.h * (y_lim[1] - y_lim[0]) * aspect
             x_inc = x_width - (x_lim[1] - x_lim[0])
             x_lim_asp = (x_lim[0] - .5*x_inc, x_lim[1] + .5*x_inc)
-            pass
+            raise NotImplementedError('aspect ratios')
         else:
             # widen y_lim to keep the aspect ratio
-            y_width = self.h * (x_lim[1] - x_lim[0]) / self.w / aspect
-            y_inc = y_width - (y_lim[1] - y_lim[0])
-            y_lim_asp = (y_lim[0] - .5*y_inc, y_lim[1] + .5*y_inc)
-            pass
+            raise NotImplementedError('aspect ratios')
         return [
             best_xlim, zip(best_xsteps, best_xlabels),
             best_ylim, zip(best_ysteps, best_ylabels),
