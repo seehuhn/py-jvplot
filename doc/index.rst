@@ -4,7 +4,6 @@ Table of Contents
 Contents:
 
 .. toctree::
+   :glob:
 
-   ch1intro
-   ch2api
-   ch3index
+   ch*

@@ -105,8 +105,7 @@ class Canvas:
         method must be called before any data can be plotted onto the
         canvas.
 
-        Arguments
-        ---------
+        Arguments:
 
         x_lim
             A pair of numbers, giving the minimal/maximal x-coordinate
