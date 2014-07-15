@@ -1,9 +1,9 @@
 Background Information
 ======================
 
-This chapter contains information about designing plots which
-influenced the design of hte JvPlot package, but which is not directly
-required to use the package.
+This chapter contains information about generating plots which has
+influenced the design of the JvPlot package, but which is not required
+to use the package.
 
 
 Automatic Axis Tick Placement
@@ -23,11 +23,12 @@ account:
 The aim of automatix tick placement is to determine, for each axis,
 good values for the following parameters:
 
-* The range :math:`[x_0, x_3]` of data coordinates covered by by the
-  axis.
+* The range :math:`[x_0, x_3]` and :math:`[y_0, y_3]` of data
+  coordinates covered by by the axes.
 
-* The spacing :math:`d` of tick marks in data coordinates; ticks will
-  be placed at every visible integer multiple of :math:`d`
+* The spacing :math:`d_x` and :math:`d_y` of tick marks in data
+  coordinates; ticks will be placed at every visible integer multiple
+  of the tick spacing.
 
 Thus, three parameters per axis (*i.e.* six parameters in total) need
 to be found.  The solution must satisfy the following hard
@@ -37,11 +38,7 @@ constraints:
    :math:`x_0 \leq x_1 < x_2 \leq x_3` and :math:`y_0 \leq y_1 < y_2
    \leq y_3` must be satisfied.
 
-2. The tick spacings :math:`d_x` and :math:`d_y` must be of the form
-   :math:`d = c \cdot 10^k` where :math:`c \in \{ 1.0, 2.0, 2.5, 5.0
-   \}` and :math:`k` is an integer.
-
-3. If an aspect ratio :math:`\alpha` is given, the condition
+2. If an aspect ratio :math:`\alpha` is given, the condition
 
    .. math::
 
@@ -50,10 +47,14 @@ constraints:
    must be satisfied, *i.e.* the scale in horizontal direction must
    equal :math:`\alpha` times the scale in vertical direction.
 
-4. There are integers :math:`k_x` and :math:`k_y` such that :math:`x_0
-   \leq k_x d_x < (k_x+1) d_x \leq x_3` and :math:`y_0 \leq k_y d_y <
-   (k_y+1) d_y \leq y_3`, *i.e.* at least two tick marks are visible
-   on each axis.
+3. The tick spacings :math:`d_x` and :math:`d_y` must be of the form
+   :math:`d = c \cdot 10^k` where :math:`c \in \{ 1.0, 2.0, 2.5, 5.0
+   \}` and :math:`k` is an integer.
+
+4. There exist integers :math:`k_x` and :math:`k_y` such that
+   :math:`x_0 \leq k_x d_x < (k_x+1) d_x \leq x_3` and :math:`y_0 \leq
+   k_y d_y < (k_y+1) d_y \leq y_3`, *i.e.* at least two tick marks are
+   visible on each axis.
 
 There are infinitely many solutions which satisfy these constraints.
 Good solutions have as many of the following properties as possible:
