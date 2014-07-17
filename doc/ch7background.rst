@@ -99,20 +99,20 @@ penalty for the x-axis is composed of four individual components:
 .. code::
 
 	/ 0,                            if labels don't overlap, and
-   p1 = |
+   p0 = |
 	\ 1 + percentage of overlap     otherwise
 
-   p2 = abs(log(dx / opt_d))
+   p1 = abs(log(dx / opt_d))
 
-   p3 = (ceil(x0/dx) - x0/dx)**2 + (x3/dx - floor(x3/dx))**2
+   p2 = (ceil(x0/dx) - x0/dx)**2 + (x3/dx - floor(x3/dx))**2
 
-   p4 = log((x3-x0) / (x2-x1))
+   p3 = log2((x3-x0) / (x2-x1))
 
 The total penalty for the x-axis is then
 
 .. code::
 
-   p = c1 * p1 + c2 * p2 + c3 * p3 + c4 * p4
+   p = c0 * p0 + c1 * p1 + c2 * p2 + c3 * p3
 
 The analogous expression for the y-axis give a total penalty for the
 y-axis.  Finally, the sum of these axis penalties is used as the
