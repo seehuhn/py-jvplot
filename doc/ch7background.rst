@@ -1,5 +1,5 @@
 Background Information
-======================
+++++++++++++++++++++++
 
 This chapter contains information about generating plots which has
 influenced the design of the JvPlot package, but which is not required
@@ -7,7 +7,10 @@ to use the package.
 
 
 Automatic Axis Tick Placement
------------------------------
+=============================
+
+Problem Statement
+-----------------
 
 Axis tick placement should take the following information into
 account:
@@ -30,9 +33,8 @@ good values for the following parameters:
   coordinates; ticks will be placed at every visible integer multiple
   of the tick spacing.
 
-Thus, three parameters per axis (*i.e.* six parameters in total) need
-to be found.  The solution must satisfy the following hard
-constraints:
+Thus, six parameters in total need to be determined.  The solution
+must satisfy the following hard constraints:
 
 1. The whole data range must be contained in the axes range, *i.e.*
    :math:`x_0 \leq x_1 < x_2 \leq x_3` and :math:`y_0 \leq y_1 < y_2
@@ -59,8 +61,12 @@ constraints:
 There are infinitely many solutions which satisfy these constraints.
 Good solutions have as many of the following properties as possible:
 
-* The tick labels (when typeset using the appropriate font) don't
-  overlap.
+* If possible, the tick labels (when typeset using the appropriate
+  font) don't overlap.
+
+* The spacing of the tick marks, when converted to device coordinates,
+  is close to the optimal label spacing given by the
+  :code:`axis_tick_opt_spacing` parameter.
 
 * :math:`\lceil x_0/d_x \rceil - x_0/d_x` (x-axis length before the
   first tick mark), :math:`x_3/d_x - \lfloor x_3/d_x \rfloor` (x-axis
@@ -69,10 +75,79 @@ Good solutions have as many of the following properties as possible:
   :math:`y_3/d_y - \lfloor y_3/d_y \rfloor` (y-axis length above the
   last tick mark) are small.
 
-* The amount of wasted axes area, *i.e.*
+* The used fraction of the axes area, *i.e.*
 
   .. math::
 
-      1 - \frac{(x_2 - x_1)(y_2 - y_1)}{(x_3 - x_0)(y_3 - y_0)}
+      \frac{(x_2 - x_1)(y_2 - y_1)}{(x_3 - x_0)(y_3 - y_0)}
 
-  is small.
+  is large (*i.e.* close to one).
+
+Algorithm
+---------
+
+Since finding the optimal solution for the tick placement problem
+seems difficult, JvPlot uses the following algorithm.  The cases of
+unspecified and specified aspect ratio are treated separately.
+
+Penalty function
+................
+
+Quality of the solutions is compared using a penalty function.  The
+penalty for the x-axis is composed of four individual components:
+
+.. code::
+
+	/ 0,                            if labels don't overlap, and
+   p1 = |
+	\ 1 + percentage of overlap     otherwise
+
+   p2 = abs(log(dx / opt_d))
+
+   p3 = (ceil(x0/dx) - x0/dx)**2 + (x3/dx - floor(x3/dx))**2
+
+   p4 = log((x3-x0) / (x2-x1))
+
+The total penalty for the x-axis is then
+
+.. code::
+
+   p = c1 * p1 + c2 * p2 + c3 * p3 + c4 * p4
+
+The analogous expression for the y-axis give a total penalty for the
+y-axis.  Finally, the sum of these axis penalties is used as the
+penalty for the pair of axes.
+
+
+Unspecified Aspect Ratio
+........................
+
+If the aspect ratio is not specified, the ticks for both axes can be
+found independently.  The algorithm is here specified for the x-axis,
+the algorithm for the y-axis is found by making the obvious
+replacements.
+
+.. code::
+
+   for "all tick spacings dx in decreasing order, starting with the smallest dx >= x2 - x1":
+       a = "largest tick position <= x1"
+       for x0 in [a, x1]:
+	   b = "smallest tick position >= x2"
+	   for x3 in [x2, b]:
+	       p = "penalty for (x0, x3, dx)"
+	       if p < "penalty of current best solution":
+		   store (x0, x3, dx) as the new best solution
+       if "solution has not improved two times in a row":
+	   break
+
+Specified Aspect Ratio
+......................
+
+If an aspect ratio is specified, both axes need to be considered
+simultaneously: because the aspect ratio relation
+
+   .. math::
+       y_3 - y_0 = \frac{h}{\alpha w} (x_3 - x_0)
+
+must be satisfied, only three of the four values :math:`x_0, x_3, y_0,
+y_3` can be chosen indenpendently.
