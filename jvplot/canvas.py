@@ -305,7 +305,6 @@ class Canvas:
                     break
                 tick_spacing = self.h * (steps[1]-steps[0]) / (lim[1]-lim[0])
                 labels = ["%g" % pos for pos in steps]
-                exts = [font_ctx.text_extents(lab) for lab in labels]
                 if tick_spacing < font_extents[2]:
                     # labels would overlap -> don't consider this choice
                     break

@@ -87,8 +87,8 @@ Algorithm
 ---------
 
 Since finding the optimal solution for the tick placement problem
-seems difficult, JvPlot uses the following algorithm.  The cases of
-unspecified and specified aspect ratio are treated separately.
+seems difficult, JvPlot uses an approximate algorithm, described in
+the following sections.
 
 Penalty function
 ................

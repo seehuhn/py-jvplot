@@ -24,6 +24,7 @@ def test_convert_dim():
             ('72.27pt', '1in'),
             ('1px', 1/res),
         ]
+        print('\nres =', res)
         for a, b in tests:
             da = _convert_dim(a, res)
             db = _convert_dim(b, res)
