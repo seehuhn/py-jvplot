@@ -1,9 +1,38 @@
-Background Information
+Implementation Details
 ++++++++++++++++++++++
 
 This chapter contains information about generating plots which has
 influenced the design of the JvPlot package, but which is not required
-to use the package.
+for use of the package.
+
+
+Coordinate Systems
+==================
+
+JvPlot uses two different coordinate systems, *device coordinates* and
+*data coordinates*.  These systems are described in the following two
+sections.
+
+Device Coordinates
+------------------
+
+Device coordinates describe positions in the output image.  The
+coordinate value `(0, 0)` corresponds to the bottom left corner of the
+image.  The first coordinate value corresponds to the horizontal axis
+(increasing to the right), the second coordinate corresponds to the
+vertical axis, increasing upwards.  The maximal coordinates are given
+by the canvas :py:attr:`~jvplot.canvas.Canvas.w` and
+:py:attr:`~jvplot.canvas.Canvas.h` attributes.
+
+The device resolution :py:attr:`~jvplot.canvas.Canvas.res` specifies
+how many device coordinate units correspond to one inch.  For PDF and
+PostScript figures, the resolution is always 72 units/inch.  For
+raster image output, the resolution can be specified when the
+:py:attr:`~jvplot.plot.Plot` object is created, one device coordinate
+unit always corresponds to one pixel.
+
+Data Coordinates
+----------------
 
 
 Automatic Axis Tick Placement
@@ -19,7 +48,7 @@ account:
   data units,
 
 * the axes area dimensions, given by the width :math:`w` and height
-  :math:`h` in device coordinates, and
+  :math:`h` in device coordinate units, and
 
 * optionally, an aspect ratio :math:`\alpha`.
 
@@ -27,7 +56,7 @@ The aim of automatix tick placement is to determine, for each axis,
 good values for the following parameters:
 
 * The range :math:`[x_0, x_3]` and :math:`[y_0, y_3]` of data
-  coordinates covered by by the axes.
+  coordinate units covered by by the axes.
 
 * The spacing :math:`d_x` and :math:`d_y` of tick marks in data
   coordinates; ticks will be placed at every visible integer multiple
@@ -107,6 +136,11 @@ penalty for the x-axis is composed of four individual components:
    p2 = (ceil(x0/dx) - x0/dx)**2 + (x3/dx - floor(x3/dx))**2
 
    p3 = log2((x3-x0) / (x2-x1))
+
+Calculation of the penalty vector is implemented by the following
+internal function:
+
+.. autofunction:: axes._axis_penalties
 
 The total penalty for the x-axis is then
 

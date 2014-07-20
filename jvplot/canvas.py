@@ -26,6 +26,7 @@ import cairocffi as cairo
 from .util import _convert_dim
 from .util import _check_coords, _check_num_vec, _check_range, _check_vec
 from .param import get
+from .axes import _axis_penalties
 
 def _prepare_context(ctx):
     ctx.set_line_join(cairo.LINE_JOIN_ROUND)
@@ -69,11 +70,25 @@ class Canvas:
     def __init__(self, ctx, x, y, w, h, res, style={}):
         """Allocate a new canvas."""
         self.ctx = ctx
+
         self.x = x
+        """Horizontal position of this canvas on the canvas, in device
+        coordinate units (read only)."""
+
         self.y = y
+        """Vertical position of this canvas on the canvas, in device
+        coordinate units (read only)."""
+
         self.w = w
+        "Width of the canvas in device coordinate units (read only)."
+
         self.h = h
+        "Height of the canvas in device coordinate units (read only)."
+
         self.res = res
+        """Resolution of the canvas, *i.e.* the number of device coordinate
+        units per inch (read only)."""
+
         self.style = dict(style)
 
         self.offset = None
@@ -83,7 +98,7 @@ class Canvas:
     def __str__(self):
         return "<Canvas %.0fx%.0f%+.0f%+.0f>" % (self.w, self.h, self.x, self.y)
 
-    def _set_defaults(self, style):
+    def _merge_defaults(self, style):
         res = dict(self.style)
         res.update(style)
         return res
@@ -100,7 +115,7 @@ class Canvas:
         self.y += p_bottom
         self.h -= p_bottom + p_top
 
-    def set_limits(self, x_lim, y_lim, aspect=None):
+    def set_limits(self, x_lim, y_lim):
         """Set the transformation from data to canvas coordinates.  This
         method must be called before any data can be plotted onto the
         canvas.
@@ -113,28 +128,10 @@ class Canvas:
         y_lim
             A pair of numbers, giving the minimal/maximal y-coordinate
             of the data.
-        aspect
-            If not `None`, a number describing the ratio between
-            vertical and horizontal scale.  If `aspect > 1`, a circle
-            in data-space will appear higher than wide on the canvas.
 
         """
         x_lim = _check_range(x_lim)
         y_lim = _check_range(y_lim)
-
-        sx = self.w / (x_lim[1] - x_lim[0])
-        sy = self.h / (y_lim[1] - y_lim[0])
-        if aspect is not None:
-            if sx * aspect > sy:
-                # we want aspect * sx == sy, so we have to widen x_lim
-                x_width = aspect * self.w / sy
-                x_inc = x_width - (x_lim[1] - x_lim[0])
-                x_lim = (x_lim[0] - .5*x_inc, x_lim[1] + .5*x_inc)
-            else:
-                # we want aspect * sx == sy, so we have to widen y_lim
-                y_width = self.h / aspect / sx
-                y_inc = y_width - (y_lim[1] - y_lim[0])
-                y_lim = (y_lim[0] - .5*y_inc, y_lim[1] + .5*y_inc)
 
         # The horizontal scale and offset are determined by the
         # following two equations:
@@ -227,7 +224,7 @@ class Canvas:
         ctx.rectangle(x, y, w, h)
         ctx.clip()
 
-        res = Canvas(ctx, x, y, w, h, self.res, style=self._set_defaults(style))
+        res = Canvas(ctx, x, y, w, h, self.res, style=self._merge_defaults(style))
         res.add_padding([p_top / self.res, p_right / self.res,
                          p_bottom / self.res, p_left / self.res])
         return res, border_rect
@@ -256,41 +253,25 @@ class Canvas:
                              padding=padding)
 
     def _layout_labels(self, x_lim, y_lim, aspect, font_ctx):
-        opt_spacing = min(self.w / 2,
-                          self.h / 2,
-                          get('axis_tick_opt_spacing', self.res, self.style))
+        opt_spacing = get('axis_tick_opt_spacing', self.res, self.style)
 
-        x_label_sep = get('axis_x_label_sep', self.res, self.style)
         font_extents = font_ctx.font_extents()
         if aspect is None:
             # horizontal axis
-            best_pn = np.inf
+            best_p = np.inf
             stop = 3
             for lim, steps in _try_steps(*x_lim):
                 if stop < 0:
                     break
-                tick_spacing = self.w * (steps[1]-steps[0]) / (lim[1]-lim[0])
-                labels = ["%g" % pos for pos in steps]
-                exts = [font_ctx.text_extents(lab) for lab in labels]
-                min_gap = min(tick_spacing - .5*(exts[i-1][4] + exts[i][4])
-                              for i in range(1, len(labels)))
-                if min_gap < x_label_sep:
-                    # labels would overlap -> don't consider this choice
-                    stop -= 1
-                    continue
 
-                pn = []
-                # penalty for sub-optimal tick spacing:
-                pn.append(abs(np.log(tick_spacing / opt_spacing)))
-                # penalty for wasting plotting area:
-                pn.append(np.log((lim[1] - lim[0]) / (x_lim[1] - x_lim[0])))
-                # penalty for data extending beyond the labels on the left:
-                pn.append(max((steps[0] - x_lim[0]) / (steps[1] - steps[0]), 0))
-                # penalty for data extending beyond the labels on the right:
-                pn.append(max((x_lim[-1] - steps[-1]) / (steps[1] - steps[0]), 0))
-                pns = np.array([1.0, 3.0, 1.0, 1.0]).dot(pn)
-                if pns < best_pn:
-                    best_pn = pns
+                labels = ["%g" % pos for pos in steps]
+                x_label_sep = get('axis_x_label_sep', self.res, self.style)
+                p = _axis_penalties(self.w, x_lim, lim, steps, labels, True,
+                                    font_ctx, x_label_sep,
+                                    min(self.w/2, opt_spacing))
+                ps = np.array([1.0, 1.0, 1.0, 1.0]).dot(p)
+                if ps < best_p:
+                    best_p = ps
                     best_xlim = lim
                     best_xsteps = steps
                     best_xlabels = labels
@@ -298,29 +279,19 @@ class Canvas:
                     stop -= 1
 
             # vertical axis
-            best_pn = np.inf
+            best_p = np.inf
             stop = 3
             for lim, steps in _try_steps(*y_lim):
                 if stop < 0:
                     break
-                tick_spacing = self.h * (steps[1]-steps[0]) / (lim[1]-lim[0])
-                labels = ["%g" % pos for pos in steps]
-                if tick_spacing < font_extents[2]:
-                    # labels would overlap -> don't consider this choice
-                    break
 
-                pn = []
-                # penalty for sub-optimal tick spacing:
-                pn.append(abs(np.log(tick_spacing / opt_spacing)))
-                # penalty for wasting plotting area:
-                pn.append(np.log((lim[1] - lim[0]) / (y_lim[1] - y_lim[0])))
-                # penalty for data extending beyond the labels on the left:
-                pn.append(max((steps[0] - y_lim[0]) / (steps[1] - steps[0]), 0))
-                # penalty for data extending beyond the labels on the right:
-                pn.append(max((y_lim[-1] - steps[-1]) / (steps[1] - steps[0]), 0))
-                pns = np.array([1.0, 3.0, 1.0, 1.0]).dot(pn)
-                if pns < best_pn:
-                    best_pn = pns
+                labels = ["%g" % pos for pos in steps]
+                p = _axis_penalties(self.h, y_lim, lim, steps, labels, False,
+                                    font_ctx, 0.0, min(self.h/2, opt_spacing))
+                ps = np.array([1.0, 1.0, 1.0, 1.0]).dot(p)
+                print(lim, steps[0], steps[-1], len(steps), p, ps < best_p)
+                if ps < best_p:
+                    best_p = ps
                     best_ylim = lim
                     best_ysteps = steps
                     best_ylabels = labels
@@ -417,7 +388,7 @@ class Canvas:
                              width=width, height=height, margin=margin,
                              border=border, padding=padding, style=style)
 
-        style = axes._set_defaults(style)
+        style = axes._merge_defaults(style)
 
         axes.ctx.save()
         lw = get('plot_lw', axes.res, style)
