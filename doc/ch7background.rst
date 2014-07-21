@@ -21,8 +21,8 @@ coordinate value `(0, 0)` corresponds to the bottom left corner of the
 image.  The first coordinate value corresponds to the horizontal axis
 (increasing to the right), the second coordinate corresponds to the
 vertical axis, increasing upwards.  The maximal coordinates are given
-by the canvas :py:attr:`~jvplot.canvas.Canvas.w` and
-:py:attr:`~jvplot.canvas.Canvas.h` attributes.
+by the canvas :py:attr:`~jvplot.canvas.Canvas.width` and
+:py:attr:`~jvplot.canvas.Canvas.height` attributes.
 
 The device resolution :py:attr:`~jvplot.canvas.Canvas.res` specifies
 how many device coordinate units correspond to one inch.  For PDF and
@@ -140,7 +140,7 @@ penalty for the x-axis is composed of four individual components:
 Calculation of the penalty vector is implemented by the following
 internal function:
 
-.. autofunction:: axes._axis_penalties
+.. autofunction:: axis._penalties
 
 The total penalty for the x-axis is then
 

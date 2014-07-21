@@ -3,18 +3,67 @@ import numpy as np
 
 _q = 10**0.25 / 2
 
-def _axis_tick_distance(k):
+def _scale(k):
     c = [1.0, 2.0, 2.5, 5.0][k%4]
     return c * 10**(k//4)
 
-def _next_axis_tick(x):
+def _ticks(a, b, scale):
+    start = math.ceil(a / scale)
+    stop = math.floor(b / scale) + 1
+    return [ k*scale for k in range(start, stop) ]
+
+def _next_scale(x):
     k = math.floor(math.log10(_q * x) * 4) + 1
-    if _axis_tick_distance(k) <= x:
+    if _scale(k) <= x:
         k += 1
     return k
 
-def _axis_penalties(length, data_lim, axis_lim, ticks, labels, is_parallel,
-                    font_ctx, min_label_sep, best_tick_dist):
+def _try_pairs(x_lim, x_step, y_lim, y_step, q):
+    x_scale = _scale(x_step)
+    x_mid = .5*(x_lim[0] + x_lim[1])
+    x_r = max(x_lim[1] - x_lim[0], (y_lim[1] - y_lim[0]) * q) / 2
+    y_scale = _scale(y_step)
+    y_mid = .5*(x_lim[0] + x_lim[1])
+    y_r = max(y_lim[1] - y_lim[0], (x_lim[1] - x_lim[0]) / q) / 2
+
+    a = np.floor((x_mid - x_r) / x_scale) * x_scale
+    for x0 in [a, x_mid - x_r]:
+        b = np.ceil((x_mid + x_r) / x_scale) * x_scale
+        for x3 in [x_mid + x_r, b]:
+            x_ticks = _ticks(x0, x3, x_scale)
+            if len(x_ticks) < 2:
+                continue
+            s = (x3 - x0) / q
+            c1 = y_mid - .5*s
+            c2 = np.floor(c1 / y_scale) * y_scale
+            for y0, y3 in [(c1, c1+s), (c2, c2+s)]:
+                y_ticks = _ticks(y0, y3, y_scale)
+                if len(y_ticks) < 2:
+                    continue
+                print(x0, x3, x_ticks, y0, y3, y_ticks)
+                yield (x0, x3), x_ticks, (y0, y3), y_ticks
+
+    a = np.floor((y_mid - y_r) / y_scale) * y_scale
+    for y0 in [a, y_mid - y_r]:
+        b = np.ceil((y_mid + y_r) / y_scale) * y_scale
+        for y3 in [y_mid + y_r, b]:
+            y_ticks = _ticks(y0, y3, y_scale)
+            if len(y_ticks) < 2:
+                continue
+            s = (y3 - y0) * q
+            c1 = x_mid - .5*s
+            c2 = np.floor(c1 / x_scale) * x_scale
+            for x0, x3 in [(c1, c1+s), (c2, c2+s)]:
+                x_ticks = _ticks(x0, x3, x_scale)
+                if len(x_ticks) < 2:
+                    continue
+                print(x0, x3, x_ticks, y0, y3, y_ticks)
+                yield (x0, x3), x_ticks, (y0, y3), y_ticks
+
+
+
+def _penalties(length, data_lim, axis_lim, ticks, labels, is_parallel,
+               font_ctx, min_label_sep, best_tick_dist):
     """Compute the 4 penalty values for a given axis tick configuration.
 
     Arguments:

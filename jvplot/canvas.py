@@ -23,10 +23,10 @@ import numpy as np
 
 import cairocffi as cairo
 
+from . import axis
 from .util import _convert_dim
 from .util import _check_coords, _check_num_vec, _check_range, _check_vec
 from .param import get
-from .axes import _axis_penalties
 
 def _prepare_context(ctx):
     ctx.set_line_join(cairo.LINE_JOIN_ROUND)
@@ -79,10 +79,10 @@ class Canvas:
         """Vertical position of this canvas on the canvas, in device
         coordinate units (read only)."""
 
-        self.w = w
+        self.width = w
         "Width of the canvas in device coordinate units (read only)."
 
-        self.h = h
+        self.height = h
         "Height of the canvas in device coordinate units (read only)."
 
         self.res = res
@@ -96,7 +96,7 @@ class Canvas:
         self.axes = None
 
     def __str__(self):
-        return "<Canvas %.0fx%.0f%+.0f%+.0f>" % (self.w, self.h, self.x, self.y)
+        return "<Canvas %.0fx%.0f%+.0f%+.0f>" % (self.width, self.height, self.x, self.y)
 
     def _merge_defaults(self, style):
         res = dict(self.style)
@@ -106,14 +106,14 @@ class Canvas:
     def add_padding(self, padding):
         """Add extra padding around the edge of the canvas."""
         padding = _check_vec(padding, 4, True)
-        p_top = _convert_dim(padding[0], self.res, self.h)
-        p_right = _convert_dim(padding[1], self.res, self.w)
-        p_bottom = _convert_dim(padding[2], self.res, self.h)
-        p_left = _convert_dim(padding[3], self.res, self.w)
+        p_top = _convert_dim(padding[0], self.res, self.height)
+        p_right = _convert_dim(padding[1], self.res, self.width)
+        p_bottom = _convert_dim(padding[2], self.res, self.height)
+        p_left = _convert_dim(padding[3], self.res, self.width)
         self.x += p_left
-        self.w -= p_left + p_right
+        self.width -= p_left + p_right
         self.y += p_bottom
-        self.h -= p_bottom + p_top
+        self.height -= p_bottom + p_top
 
     def set_limits(self, x_lim, y_lim):
         """Set the transformation from data to canvas coordinates.  This
@@ -137,24 +137,24 @@ class Canvas:
         # following two equations:
         #     x_lim[0] * x_scale + x_offset = x
         #     x_lim[1] * x_scale + x_offset = x + w
-        x_scale = self.w / (x_lim[1] - x_lim[0])
+        x_scale = self.width / (x_lim[1] - x_lim[0])
         x_offset = self.x - x_lim[0] * x_scale
         # The vertical coordinates are similar:
-        y_scale = self.h / (y_lim[1] - y_lim[0])
+        y_scale = self.height / (y_lim[1] - y_lim[0])
         y_offset = self.y - y_lim[0] * y_scale
         self.offset = (x_offset, y_offset)
         self.scale = (x_scale, y_scale)
         return x_lim, y_lim
 
     def _viewport(self, width, height, margin, border, padding, style):
-        width = _convert_dim(width, self.res, self.w, allow_none=True)
-        height = _convert_dim(height, self.res, self.h, allow_none=True)
+        width = _convert_dim(width, self.res, self.width, allow_none=True)
+        height = _convert_dim(height, self.res, self.height, allow_none=True)
 
         margin = _check_vec(margin, 4, True)
-        m_top = _convert_dim(margin[0], self.res, self.h, allow_none=True)
-        m_right = _convert_dim(margin[1], self.res, self.w, allow_none=True)
-        m_bottom = _convert_dim(margin[2], self.res, self.h, allow_none=True)
-        m_left = _convert_dim(margin[3], self.res, self.w, allow_none=True)
+        m_top = _convert_dim(margin[0], self.res, self.height, allow_none=True)
+        m_right = _convert_dim(margin[1], self.res, self.width, allow_none=True)
+        m_bottom = _convert_dim(margin[2], self.res, self.height, allow_none=True)
+        m_left = _convert_dim(margin[3], self.res, self.width, allow_none=True)
 
         if isinstance(border, str):
             border = border.split()
@@ -166,19 +166,19 @@ class Canvas:
             raise ValueError('negative border width in "%s"' % border)
 
         padding = _check_vec(padding, 4, True)
-        p_top = _convert_dim(padding[0], self.res, self.h)
-        p_right = _convert_dim(padding[1], self.res, self.w)
-        p_bottom = _convert_dim(padding[2], self.res, self.h)
-        p_left = _convert_dim(padding[3], self.res, self.w)
+        p_top = _convert_dim(padding[0], self.res, self.height)
+        p_right = _convert_dim(padding[1], self.res, self.width)
+        p_bottom = _convert_dim(padding[2], self.res, self.height)
+        p_left = _convert_dim(padding[3], self.res, self.width)
 
         total_w = sum(x for x in [m_left, border_width, p_left, width,
                                   p_right, border_width, m_right]
                       if x is not None)
-        if total_w > self.w:
-            raise ValueError("total width %f > %f" % (total_w, self.w))
+        if total_w > self.width:
+            raise ValueError("total width %f > %f" % (total_w, self.width))
         if width is None:
-            width = self.w - total_w
-        spare_w = self.w - 2*border_width - p_left - width - p_right
+            width = self.width - total_w
+        spare_w = self.width - 2*border_width - p_left - width - p_right
         if m_left is None and m_right is None:
             m_left = max(spare_w / 2, 0)
         elif m_left is None:
@@ -187,11 +187,11 @@ class Canvas:
         total_h = sum(x for x in [m_bottom, border_width, p_bottom, height,
                                   p_top, border_width, m_top]
                       if x is not None)
-        if total_h > self.h:
-            raise ValueError("total height %f > %f" % (total_h, self.h))
+        if total_h > self.height:
+            raise ValueError("total height %f > %f" % (total_h, self.height))
         if height is None:
-            height = self.h - total_h
-        spare_h = self.h - 2*border_width - p_bottom - height - p_top
+            height = self.height - total_h
+        spare_h = self.height - 2*border_width - p_bottom - height - p_top
         if m_bottom is None and m_top is None:
             m_bottom = max(spare_h / 2, 0)
         elif m_bottom is None:
@@ -246,8 +246,8 @@ class Canvas:
             raise ValueError(tmpl % (idx, cols*rows-1))
         i = idx // cols
         j = idx % cols
-        dw = self.w / cols / self.res
-        dh = self.h / rows / self.res
+        dw = self.width / cols / self.res
+        dh = self.height / rows / self.res
         return self.viewport(width=dw, height=dh,
                              margin=[i*dh, None, None, j*dw],
                              padding=padding)
@@ -256,6 +256,7 @@ class Canvas:
         opt_spacing = get('axis_tick_opt_spacing', self.res, self.style)
 
         font_extents = font_ctx.font_extents()
+        x_label_sep = get('axis_x_label_sep', self.res, self.style)
         if aspect is None:
             # horizontal axis
             best_p = np.inf
@@ -265,10 +266,9 @@ class Canvas:
                     break
 
                 labels = ["%g" % pos for pos in steps]
-                x_label_sep = get('axis_x_label_sep', self.res, self.style)
-                p = _axis_penalties(self.w, x_lim, lim, steps, labels, True,
+                p = axis._penalties(self.width, x_lim, lim, steps, labels, True,
                                     font_ctx, x_label_sep,
-                                    min(self.w/2, opt_spacing))
+                                    min(self.width/2, opt_spacing))
                 ps = np.array([1.0, 1.0, 1.0, 1.0]).dot(p)
                 if ps < best_p:
                     best_p = ps
@@ -286,10 +286,9 @@ class Canvas:
                     break
 
                 labels = ["%g" % pos for pos in steps]
-                p = _axis_penalties(self.h, y_lim, lim, steps, labels, False,
-                                    font_ctx, 0.0, min(self.h/2, opt_spacing))
+                p = axis._penalties(self.height, y_lim, lim, steps, labels, False,
+                                    font_ctx, 0.0, min(self.height/2, opt_spacing))
                 ps = np.array([1.0, 1.0, 1.0, 1.0]).dot(p)
-                print(lim, steps[0], steps[-1], len(steps), p, ps < best_p)
                 if ps < best_p:
                     best_p = ps
                     best_ylim = lim
@@ -297,15 +296,37 @@ class Canvas:
                     best_ylabels = labels
                 else:
                     stop -= 1
-        elif (x_lim[1] - x_lim[0]) / self.w < aspect * (y_lim[1] - y_lim[0]) / self.h:
-            # widen x_lim to keep the aspect ratio
-            x_width = self.w / self.h * (y_lim[1] - y_lim[0]) * aspect
-            x_inc = x_width - (x_lim[1] - x_lim[0])
-            x_lim_asp = (x_lim[0] - .5*x_inc, x_lim[1] + .5*x_inc)
-            raise NotImplementedError('aspect ratios')
-        else:
-            # widen y_lim to keep the aspect ratio
-            raise NotImplementedError('aspect ratios')
+        else:                   # aspect ratio is set
+            q = aspect * self.width / self.height
+            x_range = max(x_lim[1] - x_lim[0], (y_lim[1] - y_lim[0]) * q)
+            x_start = axis._next_scale(x_range)
+            y_range = max(y_lim[1] - y_lim[0], (x_lim[1] - x_lim[0]) / q)
+            y_start = axis._next_scale(y_range)
+            print("y scale", y_range, axis._scale(y_start))
+
+            best_p = np.inf
+            for data in axis._try_pairs(x_lim, x_start, y_lim, y_start, q):
+                x_axis_lim, x_ticks, y_axis_lim, y_ticks = data
+                x_labels = ["%g" % pos for pos in x_ticks]
+                px = axis._penalties(self.width, x_lim, x_axis_lim, x_ticks,
+                                     x_labels, True, font_ctx, x_label_sep,
+                                     min(self.width/2, opt_spacing))
+                pxs = np.array([1.0, 1.0, 1.0, 1.0]).dot(px)
+                y_labels = ["%g" % pos for pos in y_ticks]
+                py = axis._penalties(self.height, y_lim, y_axis_lim, y_ticks,
+                                     y_labels, False, font_ctx, 0,
+                                     min(self.height/2, opt_spacing))
+                pys = np.array([1.0, 1.0, 1.0, 1.0]).dot(py)
+                ps = pxs + pys
+
+                if ps < best_p:
+                    best_p = ps
+                    best_xlim = x_axis_lim
+                    best_xsteps = x_ticks
+                    best_xlabels = x_labels
+                    best_ylim = y_axis_lim
+                    best_ysteps = y_ticks
+                    best_ylabels = y_labels
         return [
             best_xlim, zip(best_xsteps, best_xlabels),
             best_ylim, zip(best_ysteps, best_ylabels),

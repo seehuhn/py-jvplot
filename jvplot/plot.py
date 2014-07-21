@@ -81,7 +81,7 @@ class Plot(Canvas):
         self.close()
 
     def __str__(self):
-        return '<JvPlot %.0fbpx%.0fbp "%s">' % (self.w, self.h, self.file_name)
+        return '<JvPlot %.0fbpx%.0fbp "%s">' % (self.width, self.h, self.file_name)
 
     def close(self):
         """Close the plot and write all outstanding changes to the underlying
