@@ -1,0 +1,3 @@
+- convert the code in `Canvas._layout_labels()` (when no aspect ratio is set)
+  to use the functions in "axis.py"
+- split `axis._try_pairs` into unit-testable bits

@@ -18,7 +18,7 @@ def _next_scale(x):
         k += 1
     return k
 
-def _try_pairs(x_lim, x_step, y_lim, y_step, q):
+def _try_pairs2(x_lim, x_step, y_lim, y_step, q):
     x_scale = _scale(x_step)
     x_mid = .5*(x_lim[0] + x_lim[1])
     x_r = max(x_lim[1] - x_lim[0], (y_lim[1] - y_lim[0]) * q) / 2
@@ -26,10 +26,12 @@ def _try_pairs(x_lim, x_step, y_lim, y_step, q):
     y_mid = .5*(x_lim[0] + x_lim[1])
     y_r = max(y_lim[1] - y_lim[0], (x_lim[1] - x_lim[0]) / q) / 2
 
-    a = np.floor((x_mid - x_r) / x_scale) * x_scale
+    a = np.ceil((x_mid - x_r) / x_scale) * x_scale
+    if a > x_lim[0]:
+        a -= x_scale
     for x0 in [a, x_mid - x_r]:
-        b = np.ceil((x_mid + x_r) / x_scale) * x_scale
-        for x3 in [x_mid + x_r, b]:
+        b = np.ceil((x0 + 2 * x_r) / x_scale) * x_scale
+        for x3 in [x0 + 2 * x_r, b]:
             x_ticks = _ticks(x0, x3, x_scale)
             if len(x_ticks) < 2:
                 continue
@@ -40,13 +42,14 @@ def _try_pairs(x_lim, x_step, y_lim, y_step, q):
                 y_ticks = _ticks(y0, y3, y_scale)
                 if len(y_ticks) < 2:
                     continue
-                print(x0, x3, x_ticks, y0, y3, y_ticks)
                 yield (x0, x3), x_ticks, (y0, y3), y_ticks
 
-    a = np.floor((y_mid - y_r) / y_scale) * y_scale
+    a = np.ceil((y_mid - y_r) / y_scale) * y_scale
+    if a > y_lim[0]:
+        a -= y_scale
     for y0 in [a, y_mid - y_r]:
-        b = np.ceil((y_mid + y_r) / y_scale) * y_scale
-        for y3 in [y_mid + y_r, b]:
+        b = np.ceil((y0 + 2 * y_r) / y_scale) * y_scale
+        for y3 in [y0 + 2*y_r, b]:
             y_ticks = _ticks(y0, y3, y_scale)
             if len(y_ticks) < 2:
                 continue
@@ -57,10 +60,13 @@ def _try_pairs(x_lim, x_step, y_lim, y_step, q):
                 x_ticks = _ticks(x0, x3, x_scale)
                 if len(x_ticks) < 2:
                     continue
-                print(x0, x3, x_ticks, y0, y3, y_ticks)
                 yield (x0, x3), x_ticks, (y0, y3), y_ticks
 
-
+def _try_pairs(x_lim, x_max_step, y_lim, y_max_step, q):
+    for x_step in range(x_max_step, x_max_step-5, -1):
+        for y_step in range(y_max_step, y_max_step-5, -1):
+            for data in _try_pairs2(x_lim, x_step, y_lim, y_step, q):
+                yield data
 
 def _penalties(length, data_lim, axis_lim, ticks, labels, is_parallel,
                font_ctx, min_label_sep, best_tick_dist):

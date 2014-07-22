@@ -302,7 +302,6 @@ class Canvas:
             x_start = axis._next_scale(x_range)
             y_range = max(y_lim[1] - y_lim[0], (x_lim[1] - x_lim[0]) / q)
             y_start = axis._next_scale(y_range)
-            print("y scale", y_range, axis._scale(y_start))
 
             best_p = np.inf
             for data in axis._try_pairs(x_lim, x_start, y_lim, y_start, q):

@@ -20,7 +20,7 @@ A Simple Library for Programatically Creating Plots
 """
 
 __title__ = 'jvplot'
-__version__ = '0.1'
+__version__ = '0.2'
 __author__ = 'Jochen Voss'
 __license__ = 'GPLv3+'
 __copyright__ = 'Copyright (c) 2014 Jochen Voss'
