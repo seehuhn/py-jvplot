@@ -25,6 +25,7 @@ parameters = {
     'axis_x_label_sep': ('dim', '8pt', 'minimum horizonal separation of x-axis labels'),
     'axis_y_label_dist': ('dim', '$axis_label_dist', 'horizontal distance between labels and tick marks on the y-axis'),
     'font_size': ('dim', '10pt', 'default font size'),
+    'hist_lw': ('dim', '$lw', 'default line width for histogram bars'),
     'lw': ('dim', '$lw_medium', 'line width'),
     'lw_medium': ('dim', '.8pt', 'default width for medium thick lines'),
     'lw_thick': ('dim', '1pt', 'default width for thick lines'),
@@ -35,6 +36,7 @@ parameters = {
     'margin.right': ('width', '$margin', 'margin to the right of the plotting area'),
     'margin.top': ('height', '$margin', 'margin above the plotting area'),
     'plot_lw': ('dim', '$lw', 'default line width for plots'),
+    'plot_point_size': ('dim', '2pt', 'default point size for scatter plots'),
 }
 
 def get(name, res, style={}, parent_width=None, parent_height=None):

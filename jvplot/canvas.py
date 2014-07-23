@@ -331,8 +331,8 @@ class Canvas:
             best_ylim, zip(best_ysteps, best_ylabels),
         ]
 
-    def get_axes(self, x_lim, y_lim, aspect=None, width=None, height=None,
-                 margin=None, border=None, padding=None, style={}):
+    def draw_axes(self, x_lim, y_lim, aspect=None, width=None, height=None,
+                  margin=None, border=None, padding=None, style={}):
         """Draw a set of coordinate axes and return a new canvas representing
         the data area inside the axes.
 
@@ -380,57 +380,99 @@ class Canvas:
         self.ctx.stroke()
         self.ctx.restore()
 
+        self.axes = axes
         return axes
 
-    def _make_line_shape(self, x, y):
+    def draw_lines(self, x, y=None, style={}):
+        x, y = _check_coords(x, y)
         x = self.offset[0] + self.scale[0] * x
         y = self.offset[1] + self.scale[1] * y
+        style = self._merge_defaults(style)
+
+        self.ctx.save()
+        lw = get('plot_lw', self.res, style)
+        self.ctx.set_line_width(lw)
         self.ctx.move_to(x[0], y[0])
         for i in range(1, len(x)):
             self.ctx.line_to(x[i], y[i])
-
-    def _make_dot_shape(self, x, y):
-        x = self.offset[0] + self.scale[0] * x
-        y = self.offset[1] + self.scale[1] * y
-        for i in range(len(x)):
-            self.ctx.move_to(x[i], y[i])
-            self.ctx.close_path()
+        self.ctx.stroke()
+        self.ctx.restore()
 
     def plot(self, x, y=None, aspect=None, width=None, height=None,
              margin=None, border=None, padding=None, style={}):
         """Draw a line plot."""
         x, y = _check_coords(x, y)
-        xmin = np.amin(x)
-        xmax = np.amax(x)
-        ymin = np.amin(y)
-        ymax = np.amax(y)
-        axes = self.get_axes((xmin, xmax), (ymin, ymax), aspect=aspect,
-                             width=width, height=height, margin=margin,
-                             border=border, padding=padding, style=style)
+        if self.axes is None:
+            xmin = np.amin(x)
+            xmax = np.amax(x)
+            ymin = np.amin(y)
+            ymax = np.amax(y)
+            self.draw_axes(
+                (xmin, xmax), (ymin, ymax), aspect=aspect, width=width,
+                height=height, margin=margin, border=border, padding=padding,
+                style=style)
+        self.axes.draw_lines(x, y, style=style)
+        return self.axes
 
-        style = axes._merge_defaults(style)
+    def draw_points(self, x, y=None, style={}):
+        x, y = _check_coords(x, y)
+        x = self.offset[0] + self.scale[0] * x
+        y = self.offset[1] + self.scale[1] * y
+        style = self._merge_defaults(style)
 
-        axes.ctx.save()
-        lw = get('plot_lw', axes.res, style)
-        axes.ctx.set_line_width(lw)
-        axes._make_line_shape(x, y)
-        axes.ctx.stroke()
-        axes.ctx.restore()
+        self.ctx.save()
+        lw = get('plot_point_size', self.res, style)
+        self.ctx.set_line_width(lw)
+        for i in range(len(x)):
+            self.ctx.move_to(x[i], y[i])
+            self.ctx.close_path()
+        self.ctx.stroke()
+        self.ctx.restore()
 
-        return axes
-
-    def scatter_plot(self, x, y=None, size=None, aspect=None, width=None,
+    def scatter_plot(self, x, y=None, aspect=None, width=None,
                      height=None, margin=None, border=None, padding=None,
                      style={}):
         """Draw a scatter plot."""
         x, y = _check_coords(x, y)
-        xmin = np.amin(x)
-        xmax = np.amax(x)
-        ymin = np.amin(y)
-        ymax = np.amax(y)
-        axes = self.get_axes((xmin, xmax), (ymin, ymax), aspect=aspect,
-                             width=width, height=height, margin=margin,
-                             border=border, padding=padding, style=style)
-        axes._make_dot_shape(x, y)
-        axes.ctx.stroke()
-        return axes
+        if self.axes is None:
+            xmin = np.amin(x)
+            xmax = np.amax(x)
+            ymin = np.amin(y)
+            ymax = np.amax(y)
+            self.draw_axes(
+                (xmin, xmax), (ymin, ymax), aspect=aspect, width=width,
+                height=height, margin=margin, border=border, padding=padding,
+                style=style)
+        self.axes.draw_points(x, y)
+        return self.axes
+
+    def draw_histogram(self, hist, bin_edges, style={}):
+        x = self.offset[0] + self.scale[0] * bin_edges
+        y = self.offset[1] + self.scale[1] * hist
+        self.ctx.save()
+        lw = get('hist_lw', self.res, style)
+        self.ctx.set_line_width(lw)
+        for i, yi in enumerate(y):
+            x0 = x[i]
+            x1 = x[i+1]
+            self.ctx.rectangle(x0, 0, x1 - x0, yi)
+        self.ctx.stroke()
+        self.ctx.restore()
+
+    def histogram(self, x, bins=10, range=None, weights=None, density=False,
+                  width=None, height=None, margin=None, border=None,
+                  padding=None, style={}):
+        """Draw a histogram."""
+        hist, bin_edges = np.histogram(x, bins=bins, range=range,
+                                       weights=weights, density=density)
+        if self.axes is None:
+            xmin = np.amin(bin_edges)
+            xmax = np.amax(bin_edges)
+            ymin = 0
+            ymax = np.amax(hist)
+            self.draw_axes(
+                (xmin, xmax), (ymin, ymax), width=width,
+                height=height, margin=margin, border=border, padding=padding,
+                style=style)
+        self.axes.draw_histogram(hist, bin_edges, style)
+        return self.axes
