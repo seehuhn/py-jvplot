@@ -5,7 +5,7 @@ from .param import get
 def test_param():
     res = 123
     style = {
-        'does.not.exist.either': 12,
+        'does.not.exist.either': 12, # invalid parameters are ignored
         'margin': '2in',
         'margin.top': '1in',
         'margin.right': '50%',

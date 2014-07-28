@@ -514,7 +514,7 @@ names = {
     'copper': (182, 99, 37),
     'medium brown': (127, 81, 18),
     'muted green': (95, 160, 82),
-    'robin's egg': (109, 237, 253),
+    'robin\'s egg': (109, 237, 253),
     'bright aqua': (11, 249, 234),
     'bright lavender': (199, 96, 255),
     'ivory': (255, 255, 203),
@@ -845,7 +845,7 @@ names = {
     'sage': (135, 174, 115),
     'grey green': (120, 155, 115),
     'white': (255, 255, 255),
-    'robin's egg blue': (152, 239, 249),
+    'robin\'s egg blue': (152, 239, 249),
     'moss green': (101, 139, 56),
     'steel blue': (90, 125, 154),
     'eggplant': (56, 8, 53),
@@ -964,15 +964,22 @@ names = {
     'purple': (126, 30, 156),
 }
 
-def check_color(col):
+def check(col):
+    r = -1
     if col.startswith('#'):
-        if len(col) == 7:
-            r = int(col[1:3], 16)
-            g = int(col[3:5], 16)
-            b = int(col[5:7], 16)
-            return (r, g, b)
-        elif len(col) == 4:
-            r = int(col[1], 16) * 17
-            g = int(col[2], 16) * 17
-            b = int(col[3], 16) * 17
-            return (r, g, b)
+        if len(col) == 1 + 6:
+            r = int(col[1:3], 16) / 255
+            g = int(col[3:5], 16) / 255
+            b = int(col[5:7], 16) / 255
+            a = 1.0
+        elif len(col) == 1 + 3:
+            r = int(col[1], 16) * 17 / 255
+            g = int(col[2], 16) * 17 / 255
+            b = int(col[3], 16) * 17 / 255
+            a = 1.0
+    elif col in names:
+        r, g, b = [x / 255 for x in names[col]]
+        a = 1.0
+    if r < 0:
+        raise ValueError('invalid color identifier ' + repr(col))
+    return (r, g, b, a)
