@@ -449,13 +449,21 @@ class Canvas:
     def draw_histogram(self, hist, bin_edges, style={}):
         x = self.offset[0] + self.scale[0] * bin_edges
         y = self.offset[1] + self.scale[1] * hist
-        self.ctx.save()
+        style = self._merge_defaults(style)
         lw = get('hist_lw', self.res, style)
+        fc = get('hist_fill_col', self.res, style)
+
+        self.ctx.save()
         self.ctx.set_line_width(lw)
         for i, yi in enumerate(y):
             x0 = x[i]
             x1 = x[i+1]
-            self.ctx.rectangle(x0, 0, x1 - x0, yi)
+            self.ctx.rectangle(x0, self.offset[1], x1 - x0, yi)
+        if fc is not None:
+            self.ctx.save()
+            self.ctx.set_source_rgba(*fc)
+            self.ctx.fill_preserve()
+            self.ctx.restore()
         self.ctx.stroke()
         self.ctx.restore()
 

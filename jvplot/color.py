@@ -964,7 +964,7 @@ names = {
     'purple': (126, 30, 156),
 }
 
-def check(col):
+def get(col):
     r = -1
     if col.startswith('#'):
         if len(col) == 1 + 6:
@@ -977,6 +977,8 @@ def check(col):
             g = int(col[2], 16) * 17 / 255
             b = int(col[3], 16) * 17 / 255
             a = 1.0
+    elif col == 'none':
+        return None
     elif col in names:
         r, g, b = [x / 255 for x in names[col]]
         a = 1.0

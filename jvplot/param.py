@@ -11,6 +11,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+from . import color
 from .util import _convert_dim
 
 # name: (type, default, inherits from, description)
@@ -26,6 +27,7 @@ parameters = {
     'axis_y_label_dist': ('dim', '$axis_label_dist', 'horizontal distance between labels and tick marks on the y-axis'),
     'font_size': ('dim', '10pt', 'default font size'),
     'hist_lw': ('dim', '$lw', 'default line width for histogram bars'),
+    'hist_fill_col': ('col', '#CCC', 'default fill color for histogram bars'),
     'lw': ('dim', '$lw_medium', 'line width'),
     'lw_medium': ('dim', '.8pt', 'default width for medium thick lines'),
     'lw_thick': ('dim', '1pt', 'default width for thick lines'),
@@ -58,5 +60,7 @@ def get(name, res, style={}, parent_width=None, parent_height=None):
         return _convert_dim(value, res, parent_height)
     elif info[0] == 'dim':
         return _convert_dim(value, res)
+    elif info[0] == 'col':
+        return color.get(value)
     else:
-        return value
+        raise NotImplementedError("parameter type '%s'" % info[0])
