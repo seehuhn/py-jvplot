@@ -117,7 +117,7 @@ class Canvas:
 
     def set_limits(self, x_lim, y_lim):
         """Set the transformation from data to canvas coordinates.  This
-        method must be called before any data can be plotted onto the
+        method must be called before any data can be plotted on the
         canvas.
 
         Arguments:
@@ -422,11 +422,20 @@ class Canvas:
 
         self.ctx.save()
         lw = get('plot_point_size', self.res, style)
+        col = get('plot_point_col', self.res, style)
+        separate = get('plot_point_separate', self.res, style)
         self.ctx.set_line_width(lw)
-        for i in range(len(x)):
-            self.ctx.move_to(x[i], y[i])
-            self.ctx.close_path()
-        self.ctx.stroke()
+        self.ctx.set_source_rgba(*col)
+        if separate:
+            for i in range(len(x)):
+                self.ctx.move_to(x[i], y[i])
+                self.ctx.close_path()
+                self.ctx.stroke()
+        else:
+            for i in range(len(x)):
+                self.ctx.move_to(x[i], y[i])
+                self.ctx.close_path()
+            self.ctx.stroke()
         self.ctx.restore()
 
     def scatter_plot(self, x, y=None, aspect=None, width=None,
@@ -458,7 +467,8 @@ class Canvas:
         for i, yi in enumerate(y):
             x0 = x[i]
             x1 = x[i+1]
-            self.ctx.rectangle(x0, self.offset[1], x1 - x0, yi)
+            self.ctx.rectangle(x0, self.offset[1],
+                               x1 - x0, yi - self.offset[1])
         if fc is not None:
             self.ctx.save()
             self.ctx.set_source_rgba(*fc)
@@ -479,8 +489,69 @@ class Canvas:
             ymin = 0
             ymax = np.amax(hist)
             self.draw_axes(
-                (xmin, xmax), (ymin, ymax), width=width,
-                height=height, margin=margin, border=border, padding=padding,
-                style=style)
+                (xmin, xmax), (ymin, ymax), width=width, height=height,
+                margin=margin, border=border, padding=padding, style=style)
         self.axes.draw_histogram(hist, bin_edges, style)
         return self.axes
+
+    def draw_affine(self, x=None, y=None, a=None, b=None, style={}):
+        """Draw a straight line on a canvas.
+
+        Arguments:
+
+        x (float)
+            If `x` is not `None`, draw a vertical line at horizontal
+            position `x` (in data coordinates).
+
+        y (float)
+            If `y` is not `None`, draw a horizontal line at vertical
+            position `y` (in data coordinates).
+
+        a, b (float)
+            If `a` and `b` are not `None`, draw the affine function
+            :math:`a + bx` (in data coordinates).
+
+        style (dict):
+            Parameters setting the line thickness and color.
+        """
+
+        style = self._merge_defaults(style)
+        lw = get('affine_lw', self.res, style)
+        col = get('affine_line_col', self.res, style)
+
+        if x is not None:
+            x = float(x)
+            assert y is None and a is None and b is None
+            x = self.offset[0] + x * self.scale[0]
+            self.ctx.save()
+            self.ctx.set_line_width(lw)
+            self.ctx.set_source_rgba(*col)
+            self.ctx.move_to(x, self.y)
+            self.ctx.line_to(x, self.y + self.height)
+            self.ctx.stroke()
+            self.ctx.restore()
+            return
+
+        if y is not None:
+            a = float(y)
+            b = 0.0
+            assert x is None and a is None and b is None
+        else:
+            a = float(a)
+            b = float(b)
+            assert x is None and y is None
+
+        # self.x = self.offset[0] + x0 * self.scale[0]
+        x0 = (self.x - self.offset[0]) / self.scale[0]
+        y0 = a + b * x0
+        # self.x + self.width = self.offset[0] + x1 * self.scale[0]
+        x1 = (self.x + self.width - self.offset[0]) / self.scale[0]
+        y1 = a + b * x1
+
+        self.ctx.save()
+        self.ctx.set_line_width(lw)
+        self.ctx.set_source_rgba(*col)
+        self.ctx.move_to(self.x, self.offset[1] + y0 * self.scale[1])
+        self.ctx.line_to(self.x + self.width, self.offset[1] + y1 * self.scale[1])
+        self.ctx.stroke()
+        self.ctx.restore()

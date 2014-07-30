@@ -16,6 +16,8 @@ from .util import _convert_dim
 
 # name: (type, default, inherits from, description)
 parameters = {
+    'affine_lw': ('dim', '$lw', 'default line width for straight lines'),
+    'affine_line_col': ('col', '$line_col', 'default line color for straight lines'),
     'axis_font_size': ('dim', '$font_size', 'font size for axis labels'),
     'axis_label_dist': ('dim', '3pt', 'default distance between axis labels and tick marks'),
     'axis_lw': ('dim', '$lw_thick', 'line width of the axis boxes'),
@@ -26,8 +28,9 @@ parameters = {
     'axis_x_label_sep': ('dim', '8pt', 'minimum horizonal separation of x-axis labels'),
     'axis_y_label_dist': ('dim', '$axis_label_dist', 'horizontal distance between labels and tick marks on the y-axis'),
     'font_size': ('dim', '10pt', 'default font size'),
-    'hist_lw': ('dim', '$lw', 'default line width for histogram bars'),
     'hist_fill_col': ('col', '#CCC', 'default fill color for histogram bars'),
+    'hist_lw': ('dim', '$lw', 'default line width for histogram bars'),
+    'line_col': ('col', 'black', 'default line color'),
     'lw': ('dim', '$lw_medium', 'line width'),
     'lw_medium': ('dim', '.8pt', 'default width for medium thick lines'),
     'lw_thick': ('dim', '1pt', 'default width for thick lines'),
@@ -38,6 +41,8 @@ parameters = {
     'margin.right': ('width', '$margin', 'margin to the right of the plotting area'),
     'margin.top': ('height', '$margin', 'margin above the plotting area'),
     'plot_lw': ('dim', '$lw', 'default line width for plots'),
+    'plot_point_col': ('col', '$line_col', 'default point color for scatter plots'),
+    'plot_point_separate': ('bool', False, 'whether to draw points in a scatter plot individually'),
     'plot_point_size': ('dim', '2pt', 'default point size for scatter plots'),
 }
 
@@ -62,5 +67,7 @@ def get(name, res, style={}, parent_width=None, parent_height=None):
         return _convert_dim(value, res)
     elif info[0] == 'col':
         return color.get(value)
+    elif info[0] == 'bool':
+        return bool(value)
     else:
         raise NotImplementedError("parameter type '%s'" % info[0])

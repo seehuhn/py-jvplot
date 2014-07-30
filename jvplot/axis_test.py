@@ -37,28 +37,28 @@ class AxesPenaltyTestCase(unittest.TestCase):
 
     def test_p0(self):
         label = "hello"
-        labels = [ label, label ]
+        labels = [label, label]
 
         # horizontal axis
         h_ext = self.plot.ctx.text_extents(label)
         width = h_ext[4] / self.plot.scale[0]
 
-        ticks = [ 0, width ]
+        ticks = [0, width]
         p = axis._penalties(self.plot.width, (0,1), (0,1), ticks, labels, True,
                             self.plot.ctx, 0.0, 1.0)
         nose.tools.assert_almost_equals(p[0], 0)
 
-        ticks = [ 0, 2*width ]
+        ticks = [0, 2*width]
         p = axis._penalties(self.plot.width, (0,1), (0,1), ticks, labels, True,
                             self.plot.ctx, 0.0, 1.0)
         nose.tools.assert_almost_equals(p[0], 0)
 
-        ticks = [ 0, .5*width ]
+        ticks = [0, .5*width]
         p = axis._penalties(self.plot.width, (0,1), (0,1), ticks, labels, True,
                             self.plot.ctx, 0.0, 1.0)
         nose.tools.assert_almost_equals(p[0], 1 + .5)
 
-        ticks = [ 0, width ]
+        ticks = [0, width]
         p = axis._penalties(self.plot.width, (0,1), (0,1), ticks, labels, True,
                             self.plot.ctx, h_ext[4], 1.0)
         nose.tools.assert_almost_equals(p[0], 1 + .5)
@@ -67,22 +67,22 @@ class AxesPenaltyTestCase(unittest.TestCase):
         v_ext = self.plot.ctx.font_extents()
         height = v_ext[2] / self.plot.scale[1]
 
-        ticks = [ 0, height ]
+        ticks = [0, height]
         p = axis._penalties(self.plot.height, (0,3), (0,3), ticks, labels, False,
                             self.plot.ctx, 0.0, 1.0)
         nose.tools.assert_almost_equals(p[0], 0)
 
-        ticks = [ 0, 2*height ]
+        ticks = [0, 2*height]
         p = axis._penalties(self.plot.height, (0,3), (0,3), ticks, labels, False,
                             self.plot.ctx, 0.0, 1.0)
         nose.tools.assert_almost_equals(p[0], 0)
 
-        ticks = [ 0, .5*height ]
+        ticks = [0, .5*height]
         p = axis._penalties(self.plot.height, (0,3), (0,3), ticks, labels, False,
                             self.plot.ctx, 0.0, 1.0)
         nose.tools.assert_almost_equals(p[0], 1 + .5)
 
-        ticks = [ 0, height ]
+        ticks = [0, height]
         p = axis._penalties(self.plot.height, (0,3), (0,3), ticks, labels, False,
                             self.plot.ctx, v_ext[2], 1.0)
         nose.tools.assert_almost_equals(p[0], 1 + .5)
@@ -101,7 +101,9 @@ class AxesPenaltyTestCase(unittest.TestCase):
     # TODO(voss): implement unit tests for p2
 
     def test_p3(self):
-        p = axis._penalties(self.plot.height, (0, 1), (0, 1), [], [], True, None, 1, 1)
+        p = axis._penalties(self.plot.height, (0, 1), (0, 1), [], [], True,
+                            None, 1, 1)
         nose.tools.assert_almost_equals(p[3], 0)
-        p = axis._penalties(self.plot.height, (0, 1), (0, 2), [], [], True, None, 1, 1)
+        p = axis._penalties(self.plot.height, (0, 1), (0, 2), [], [], True,
+                            None, 1, 1)
         nose.tools.assert_almost_equals(p[3], 1.0)

@@ -27,10 +27,30 @@ from .util import _convert_dim
 
 class Plot(Canvas):
 
-    """The Plot Class repesents an image in a graphics file.
+    """The Plot Class repesents a graphics file storing a single figure.
+
+    Arguments:
+
+    fname (string)
+        The name of the file the figure wil be stored in.  Any
+        previously existing file with this name will be overwritten.
+        The file name extension determines the file type.  Currently
+        available file types are `.pdf`, `.ps`, `.eps` and `.png`.
+
+    width
+        The figure width.  This can either be a number to give the
+        width in inches, or a string including a length unit like "10cm".
+
+    height
+        The figure height.  This can either be a number to give the
+        height in inches, or a string including a length unit like "10cm".
+
+    res (number)
+        For raster image formats, `res` specifies the device resolution
+        in pixels per inch.
     """
 
-    def __init__(self, fname, width, height, res=72):
+    def __init__(self, fname, width, height, res=100):
         """Create a new plot."""
         _, ext = os.path.splitext(fname)
         if ext == '':

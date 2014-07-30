@@ -11,6 +11,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+import re
+
+d_ = r'\s*([.0-9]+)\s*'
+rgb_pattern_ = re.compile(r'rgb\(' + d_ + ',' + d_ + ',' + d_ + r'\)$')
+rgba_pattern_ = re.compile(r'rgba\(' + d_ + ',' + d_ + ',' + d_ + ','
+                           + d_ + r'\)$')
+del d_
+
 # color names from the XKCD color list http://xkcd.com/color/rgb.txt
 names = {
     'cloudy blue': (172, 194, 217),
@@ -982,6 +990,23 @@ def get(col):
     elif col in names:
         r, g, b = [x / 255 for x in names[col]]
         a = 1.0
+    else:
+        m = rgb_pattern_.match(col)
+        if m is not None:
+            r = float(m.group(1)) / 255
+            g = float(m.group(2)) / 255
+            b = float(m.group(3)) / 255
+            a = 1.0
+        else:
+            m = rgba_pattern_.match(col)
+            if m is not None:
+                r = float(m.group(1)) / 255
+                g = float(m.group(2)) / 255
+                b = float(m.group(3)) / 255
+                a = float(m.group(4))
     if r < 0:
-        raise ValueError('invalid color identifier ' + repr(col))
+        raise TypeError('invalid color identifier ' + repr(col))
+    if not (0 <= r <= 1 and 0 <= g <= 1 and 0 <= b <= 1 and 0 <= a <= 1):
+        tmpl = 'color components out of range: (%f,%f,%f,%f)'
+        raise ValueError(tmpl % (r, g, b, a))
     return (r, g, b, a)

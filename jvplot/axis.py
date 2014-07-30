@@ -10,7 +10,7 @@ def _scale(k):
 def _ticks(a, b, scale):
     start = math.ceil(a / scale)
     stop = math.floor(b / scale) + 1
-    return [ k*scale for k in range(start, stop) ]
+    return [k*scale for k in range(start, stop)]
 
 def _next_scale(x):
     k = math.floor(math.log10(_q * x) * 4) + 1

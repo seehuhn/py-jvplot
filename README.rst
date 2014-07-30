@@ -18,13 +18,12 @@ Usage
 -----
 
 The JvPlot package is work in progress.  So far, only simple line
-plots and scatter plots are implemented.  An example plot can be
-generated as follows::
+plots, scatter plots and histograms are implemented.  An example plot
+can be generated as follows::
 
     import numpy as np
+    import jvplot
 
-    from jvplot import JvPlot
-
-    with JvPlot('test.pdf', '5in', '3in') as pl:
+    with jvplot.Plot('test.pdf', '5in', '3in') as pl:
 	pl.scatter_plot(np.random.rand(137),
 			col=(1, 0, 0), size='1mm')
