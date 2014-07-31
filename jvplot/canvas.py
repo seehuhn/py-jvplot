@@ -174,7 +174,7 @@ class Canvas:
         total_w = sum(x for x in [m_left, border_width, p_left, width,
                                   p_right, border_width, m_right]
                       if x is not None)
-        if total_w > self.width:
+        if total_w > 1.001 * self.width:
             raise ValueError("total width %f > %f" % (total_w, self.width))
         if width is None:
             width = self.width - total_w
@@ -187,7 +187,7 @@ class Canvas:
         total_h = sum(x for x in [m_bottom, border_width, p_bottom, height,
                                   p_top, border_width, m_top]
                       if x is not None)
-        if total_h > self.height:
+        if total_h > 1.001 * self.height:
             raise ValueError("total height %f > %f" % (total_h, self.height))
         if height is None:
             height = self.height - total_h
@@ -337,8 +337,21 @@ class Canvas:
         the data area inside the axes.
 
         """
+        style = self._merge_defaults(style)
+
         if margin is None:
-            margin = ["2mm", "2mm", "7mm", "14mm"]
+            margin = [None, None, None, None]
+        else:
+            margin = _check_vec(margin, 4, True)
+        if margin[0] is None:
+            margin[0] = get('axis_margin_top', self.res, style) / self.res
+        if margin[1] is None:
+            margin[1] = get('axis_margin_right', self.res, style) / self.res
+        if margin[2] is None:
+            margin[2] = get('axis_margin_bottom', self.res, style) / self.res
+        if margin[3] is None:
+            margin[3] = get('axis_margin_left', self.res, style) / self.res
+
         if border is None:
             border = get('axis_lw', self.res, style) / self.res
         if padding is None:
@@ -398,17 +411,17 @@ class Canvas:
         self.ctx.stroke()
         self.ctx.restore()
 
-    def plot(self, x, y=None, aspect=None, width=None, height=None,
-             margin=None, border=None, padding=None, style={}):
+    def plot(self, x, y=None, aspect=None, x_lim=None, y_lim=None, width=None,
+             height=None, margin=None, border=None, padding=None, style={}):
         """Draw a line plot."""
         x, y = _check_coords(x, y)
         if self.axes is None:
-            xmin = np.amin(x)
-            xmax = np.amax(x)
-            ymin = np.amin(y)
-            ymax = np.amax(y)
+            if x_lim is None:
+                x_lim = (np.amin(x), np.amax(x))
+            if y_lim is None:
+                y_lim = (np.amin(y), np.amax(y))
             self.draw_axes(
-                (xmin, xmax), (ymin, ymax), aspect=aspect, width=width,
+                x_lim, y_lim, aspect=aspect, width=width,
                 height=height, margin=margin, border=border, padding=padding,
                 style=style)
         self.axes.draw_lines(x, y, style=style)
@@ -478,19 +491,19 @@ class Canvas:
         self.ctx.restore()
 
     def histogram(self, x, bins=10, range=None, weights=None, density=False,
-                  width=None, height=None, margin=None, border=None,
-                  padding=None, style={}):
+                  x_lim=None, y_lim=None, width=None, height=None, margin=None,
+                  border=None, padding=None, style={}):
         """Draw a histogram."""
         hist, bin_edges = np.histogram(x, bins=bins, range=range,
                                        weights=weights, density=density)
         if self.axes is None:
-            xmin = np.amin(bin_edges)
-            xmax = np.amax(bin_edges)
-            ymin = 0
-            ymax = np.amax(hist)
+            if x_lim is None:
+                x_lim = (np.amin(bin_edges), np.amax(bin_edges))
+            if y_lim is None:
+                y_lim = (0, np.amax(hist))
             self.draw_axes(
-                (xmin, xmax), (ymin, ymax), width=width, height=height,
-                margin=margin, border=border, padding=padding, style=style)
+                x_lim, y_lim, width=width, height=height, margin=margin,
+                border=border, padding=padding, style=style)
         self.axes.draw_histogram(hist, bin_edges, style)
         return self.axes
 
@@ -533,9 +546,9 @@ class Canvas:
             return
 
         if y is not None:
+            assert x is None and a is None and b is None
             a = float(y)
             b = 0.0
-            assert x is None and a is None and b is None
         else:
             a = float(a)
             b = float(b)

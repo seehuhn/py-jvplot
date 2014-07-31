@@ -16,11 +16,15 @@ from .util import _convert_dim
 
 # name: (type, default, inherits from, description)
 parameters = {
-    'affine_lw': ('dim', '$lw', 'default line width for straight lines'),
     'affine_line_col': ('col', '$line_col', 'default line color for straight lines'),
+    'affine_lw': ('dim', '$lw', 'default line width for straight lines'),
     'axis_font_size': ('dim', '$font_size', 'font size for axis labels'),
     'axis_label_dist': ('dim', '3pt', 'default distance between axis labels and tick marks'),
     'axis_lw': ('dim', '$lw_thick', 'line width of the axis boxes'),
+    'axis_margin_bottom': ('dim', '7mm', 'default axis bottom margin'),
+    'axis_margin_left': ('dim', '14mm', 'default axis left margin'),
+    'axis_margin_right': ('dim', '2mm', 'default axis right margin'),
+    'axis_margin_top': ('dim', '2mm', 'default axis top margin'),
     'axis_tick_length': ('dim', '3pt', 'length of axis tick marks'),
     'axis_tick_opt_spacing': ('dim', '2cm', 'optimal spacing for axis tick marks'),
     'axis_tick_width': ('dim', '$lw_medium', 'line width for axis tick marks'),
@@ -29,7 +33,7 @@ parameters = {
     'axis_y_label_dist': ('dim', '$axis_label_dist', 'horizontal distance between labels and tick marks on the y-axis'),
     'font_size': ('dim', '10pt', 'default font size'),
     'hist_fill_col': ('col', '#CCC', 'default fill color for histogram bars'),
-    'hist_lw': ('dim', '$lw', 'default line width for histogram bars'),
+    'hist_lw': ('dim', '$lw_thin', 'default line width for histogram bars'),
     'line_col': ('col', 'black', 'default line color'),
     'lw': ('dim', '$lw_medium', 'line width'),
     'lw_medium': ('dim', '.8pt', 'default width for medium thick lines'),

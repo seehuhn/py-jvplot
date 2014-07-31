@@ -1,7 +1,16 @@
+enhancements
+------------
+
 - add support for axis labels
+- implement logarithmic axes
 - convert the code in `Canvas._layout_labels()` (when no aspect ratio is set)
   to use the functions in "axis.py"
-- split `axis._try_pairs` into unit-testable bits
-- should histograms have padding-bottom = 0?
-- implement logarithmic axes
 - add support for raster images
+- implement units 'em' and 'en'
+
+bug fixes
+---------
+
+- split `axis._try_pairs` into unit-testable bits
+- the output of draw_affine should (optionally) go through the padding
+- should histograms have padding-bottom = 0?
