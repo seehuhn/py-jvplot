@@ -24,6 +24,7 @@ import numpy as np
 import cairocffi as cairo
 
 from . import axis
+from . import errors
 from .util import _convert_dim
 from .util import _check_coords, _check_num_vec, _check_range, _check_vec
 from .param import get
@@ -105,6 +106,9 @@ class Canvas:
 
     def add_padding(self, padding):
         """Add extra padding around the edge of the canvas."""
+        if self.axes is not None:
+            raise errors.UsageError("cannot add padding once axes are present")
+
         padding = _check_vec(padding, 4, True)
         p_top = _convert_dim(padding[0], self.res, self.height)
         p_right = _convert_dim(padding[1], self.res, self.width)
@@ -114,6 +118,27 @@ class Canvas:
         self.width -= p_left + p_right
         self.y += p_bottom
         self.height -= p_bottom + p_top
+
+    def add_title(self, text, style={}):
+        if self.axes is not None:
+            raise errors.UsageError("cannot add title once axes are present")
+
+        style = self._merge_defaults(style)
+        font_size = get('title_font_size', self.res, style)
+        margin = get('title_top_margin', self.res, style)
+
+        self.ctx.save()
+        self.ctx.set_font_matrix(
+            cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
+        ascent, descent, _, _, _ = self.ctx.font_extents()
+        self.height -= ascent + descent + margin
+
+        ext = self.ctx.text_extents(text)
+        x_offs = max((self.width - ext[2]) / 2, 0)
+        x_offs -= ext[0]
+        self.ctx.move_to(self.x + x_offs, self.height + descent)
+        self.ctx.show_text(text)
+        self.ctx.restore()
 
     def set_limits(self, x_lim, y_lim):
         """Set the transformation from data to canvas coordinates.  This
