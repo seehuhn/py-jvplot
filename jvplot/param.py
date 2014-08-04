@@ -32,6 +32,7 @@ parameters = {
     'axis_x_label_sep': ('dim', '8pt', 'minimum horizonal separation of x-axis labels'),
     'axis_y_label_dist': ('dim', '$axis_label_dist', 'horizontal distance between labels and tick marks on the y-axis'),
     'font_size': ('dim', '10pt', 'default font size'),
+    'hist_col': ('col', '$line_col', 'line color for histogram boxes'),
     'hist_fill_col': ('col', '#CCC', 'default fill color for histogram bars'),
     'hist_lw': ('dim', '$lw_thin', 'default line width for histogram bars'),
     'line_col': ('col', 'black', 'default line color'),

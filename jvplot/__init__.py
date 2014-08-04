@@ -11,12 +11,29 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""
-A Simple Library for Programatically Creating Plots
----------------------------------------------------
+"""A Simple Library for Creating Plots Programatically
+===================================================
 
 :copyright: 2014, Jochen Voss
 :license: GPL version 3 or newer, see LICENSE for more details
+
+Quick Start
+-----------
+
+The main entry point for the JvPlot package is the
+:py:class:`jvplot.plot.Plot()` class which creates a new figure.  The
+name ``jvplot.Plot`` can be used as a shorthand for
+:py:class:`jvplot.plot.Plot`.
+
+Modules
+-------
+
+The JvPlot package is composed of the following main modules:
+
+* :py:mod:`jvplot.plot`
+* :py:mod:`jvplot.canvas`
+* :py:mod:`jvplot.param`
+
 """
 
 __title__ = 'jvplot'

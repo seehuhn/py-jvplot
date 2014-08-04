@@ -974,6 +974,8 @@ names = {
 
 def get(col):
     r = -1
+    if col is None:
+        return None
     if col.startswith('#'):
         if len(col) == 1 + 6:
             r = int(col[1:3], 16) / 255
@@ -985,8 +987,6 @@ def get(col):
             g = int(col[2], 16) * 17 / 255
             b = int(col[3], 16) * 17 / 255
             a = 1.0
-    elif col == 'none':
-        return None
     elif col in names:
         r, g, b = [x / 255 for x in names[col]]
         a = 1.0

@@ -12,5 +12,4 @@ bug fixes
 ---------
 
 - split `axis._try_pairs` into unit-testable bits
-- the output of draw_affine should (optionally) go through the padding
 - should histograms have padding-bottom = 0?

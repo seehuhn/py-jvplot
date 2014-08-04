@@ -50,7 +50,7 @@ class Plot(Canvas):
         in pixels per inch.
     """
 
-    def __init__(self, fname, width, height, res=100):
+    def __init__(self, fname, width, height, *, res=100):
         """Create a new plot."""
         _, ext = os.path.splitext(fname)
         if ext == '':

@@ -86,6 +86,11 @@ class Canvas:
         self.height = h
         "Height of the canvas in device coordinate units (read only)."
 
+        self._orig_x = self.x
+        self._orig_y = self.y
+        self._orig_width = self.width
+        self._orig_height = self.height
+
         self.res = res
         """Resolution of the canvas, *i.e.* the number of device coordinate
         units per inch (read only)."""
@@ -136,7 +141,7 @@ class Canvas:
         ext = self.ctx.text_extents(text)
         x_offs = max((self.width - ext[2]) / 2, 0)
         x_offs -= ext[0]
-        self.ctx.move_to(self.x + x_offs, self.height + descent)
+        self.ctx.move_to(self.x + x_offs, self.y + self.height + descent)
         self.ctx.show_text(text)
         self.ctx.restore()
 
@@ -264,6 +269,11 @@ class Canvas:
         return res
 
     def subplot(self, cols, rows, idx, padding=0, style={}):
+        """Split the current canvas into a `cols`-times-`rows` grid and return
+        the sub-canvas corresponding to column `idx % cols` and row
+        `idx // cols` (where both row and column counts start with 0).
+
+        """
         if rows <= 0 or cols <= 0:
             return ValueError('invalid %d by %d arrangement' % (cols, rows))
         if not 0 <= idx < cols*rows:
@@ -274,7 +284,7 @@ class Canvas:
         dw = self.width / cols / self.res
         dh = self.height / rows / self.res
         return self.viewport(width=dw, height=dh,
-                             margin=[i*dh, None, None, j*dw],
+                             margin=[None, None, i*dh, j*dw],
                              padding=padding)
 
     def _layout_labels(self, x_lim, y_lim, aspect, font_ctx):
@@ -497,22 +507,26 @@ class Canvas:
         x = self.offset[0] + self.scale[0] * bin_edges
         y = self.offset[1] + self.scale[1] * hist
         style = self._merge_defaults(style)
+        lc = get('hist_col', self.res, style)
         lw = get('hist_lw', self.res, style)
         fc = get('hist_fill_col', self.res, style)
 
         self.ctx.save()
-        self.ctx.set_line_width(lw)
         for i, yi in enumerate(y):
             x0 = x[i]
             x1 = x[i+1]
             self.ctx.rectangle(x0, self.offset[1],
                                x1 - x0, yi - self.offset[1])
         if fc is not None:
-            self.ctx.save()
             self.ctx.set_source_rgba(*fc)
             self.ctx.fill_preserve()
-            self.ctx.restore()
-        self.ctx.stroke()
+        if lw and lc is not None:
+            max_bin_width = np.max(x[1:] - x[:-1])
+            if lw > .25 * max_bin_width:
+                lw = .25 * max_bin_width
+            self.ctx.set_line_width(lw)
+            self.ctx.set_source_rgba(*lc)
+            self.ctx.stroke()
         self.ctx.restore()
 
     def histogram(self, x, bins=10, range=None, weights=None, density=False,
@@ -564,8 +578,8 @@ class Canvas:
             self.ctx.save()
             self.ctx.set_line_width(lw)
             self.ctx.set_source_rgba(*col)
-            self.ctx.move_to(x, self.y)
-            self.ctx.line_to(x, self.y + self.height)
+            self.ctx.move_to(x, self._orig_y)
+            self.ctx.line_to(x, self._orig_y + self._orig_height)
             self.ctx.stroke()
             self.ctx.restore()
             return
@@ -579,17 +593,19 @@ class Canvas:
             b = float(b)
             assert x is None and y is None
 
-        # self.x = self.offset[0] + x0 * self.scale[0]
-        x0 = (self.x - self.offset[0]) / self.scale[0]
+        # self._orig_x = self.offset[0] + x0 * self.scale[0]
+        x0 = (self._orig_x - self.offset[0]) / self.scale[0]
         y0 = a + b * x0
-        # self.x + self.width = self.offset[0] + x1 * self.scale[0]
-        x1 = (self.x + self.width - self.offset[0]) / self.scale[0]
+        # self._orig_x + self._orig_width = self.offset[0] + x1 * self.scale[0]
+        x1 = (self._orig_x + self._orig_width - self.offset[0]) / self.scale[0]
         y1 = a + b * x1
 
         self.ctx.save()
         self.ctx.set_line_width(lw)
         self.ctx.set_source_rgba(*col)
-        self.ctx.move_to(self.x, self.offset[1] + y0 * self.scale[1])
-        self.ctx.line_to(self.x + self.width, self.offset[1] + y1 * self.scale[1])
+        self.ctx.move_to(self._orig_x,
+                         self.offset[1] + y0 * self.scale[1])
+        self.ctx.line_to(self._orig_x + self._orig_width,
+                         self.offset[1] + y1 * self.scale[1])
         self.ctx.stroke()
         self.ctx.restore()
