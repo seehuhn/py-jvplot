@@ -546,7 +546,7 @@ class Canvas:
         self.axes.draw_histogram(hist, bin_edges, style)
         return self.axes
 
-    def draw_affine(self, x=None, y=None, a=None, b=None, style={}):
+    def draw_affine(self, *, x=None, y=None, a=None, b=None, style={}):
         """Draw a straight line on a canvas.
 
         Arguments:
