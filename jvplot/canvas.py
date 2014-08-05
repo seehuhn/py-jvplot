@@ -65,6 +65,21 @@ def _try_steps(a, b):
         if n > 1:
             yield (step_a*scale, step_b*scale), steps
 
+def _fixup_lim(lim):
+    try:
+        a, b = lim
+    except:
+        tmpl = 'axis limits must be pairs of numbers, not "%s"'
+        raise TypeError(tmpl % repr(lim))
+    if not a < b:
+        tmpl = 'lower bound %s must not be smaller than upper bound %s'
+        raise  ValueError(tmpl % lim)
+    if a != b:
+        return lim
+    if a == 0:
+        return (-1, 1)
+    return (min(a,0), max(a,0))
+
 class Canvas:
     """The Canvas class."""
 
@@ -403,6 +418,9 @@ class Canvas:
             cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
         self.ctx.set_line_width(tick_width)
 
+        x_lim = _fixup_lim(x_lim)
+        y_lim = _fixup_lim(y_lim)
+
         x_lim, x_labels, y_lim, y_labels = axes._layout_labels(
             x_lim, y_lim, aspect, self.ctx)
         axes.set_limits(x_lim, y_lim)
@@ -486,18 +504,18 @@ class Canvas:
             self.ctx.stroke()
         self.ctx.restore()
 
-    def scatter_plot(self, x, y=None, aspect=None, width=None,
-                     height=None, margin=None, border=None, padding=None,
-                     style={}):
+    def scatter_plot(self, x, y=None, aspect=None, x_lim=None, y_lim=None,
+                     width=None, height=None, margin=None, border=None,
+                     padding=None, style={}):
         """Draw a scatter plot."""
         x, y = _check_coords(x, y)
         if self.axes is None:
-            xmin = np.amin(x)
-            xmax = np.amax(x)
-            ymin = np.amin(y)
-            ymax = np.amax(y)
+            if x_lim is None:
+                x_lim = (np.amin(x), np.amax(x))
+            if y_lim is None:
+                y_lim = (np.amin(y), np.amax(y))
             self.draw_axes(
-                (xmin, xmax), (ymin, ymax), aspect=aspect, width=width,
+                x_lim, y_lim, aspect=aspect, width=width,
                 height=height, margin=margin, border=border, padding=padding,
                 style=style)
         self.axes.draw_points(x, y)
