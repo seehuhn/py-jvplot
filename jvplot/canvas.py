@@ -25,9 +25,8 @@ import cairocffi as cairo
 
 from . import axis
 from . import errors
-from .util import _convert_dim
-from .util import _check_coords, _check_num_vec, _check_range, _check_vec
-from .param import get
+from . import param
+from . import util
 
 def _prepare_context(ctx):
     ctx.set_line_join(cairo.LINE_JOIN_ROUND)
@@ -83,7 +82,7 @@ def _fixup_lim(lim):
 class Canvas:
     """The Canvas class."""
 
-    def __init__(self, ctx, x, y, w, h, res, style={}):
+    def __init__(self, ctx, x, y, w, h, *, res, style={}):
         """Allocate a new canvas."""
         self.ctx = ctx
 
@@ -117,7 +116,8 @@ class Canvas:
         self.axes = None
 
     def __str__(self):
-        return "<Canvas %.0fx%.0f%+.0f%+.0f>" % (self.width, self.height, self.x, self.y)
+        tmpl = "<Canvas %.0fx%.0f%+.0f%+.0f>"
+        return tmpl % (self.width, self.height, self.x, self.y)
 
     def _merge_defaults(self, style):
         res = dict(self.style)
@@ -127,25 +127,26 @@ class Canvas:
     def add_padding(self, padding):
         """Add extra padding around the edge of the canvas."""
         if self.axes is not None:
-            raise errors.UsageError("cannot add padding once axes are present")
+            msg = "cannot add padding once axes are present"
+            raise errors.UsageError(msg)
 
-        padding = _check_vec(padding, 4, True)
-        p_top = _convert_dim(padding[0], self.res, self.height)
-        p_right = _convert_dim(padding[1], self.res, self.width)
-        p_bottom = _convert_dim(padding[2], self.res, self.height)
-        p_left = _convert_dim(padding[3], self.res, self.width)
+        padding = util._check_vec(padding, 4, True)
+        p_top = util._convert_dim(padding[0], self.res, self.height)
+        p_right = util._convert_dim(padding[1], self.res, self.width)
+        p_bottom = util._convert_dim(padding[2], self.res, self.height)
+        p_left = util._convert_dim(padding[3], self.res, self.width)
         self.x += p_left
         self.width -= p_left + p_right
         self.y += p_bottom
         self.height -= p_bottom + p_top
 
-    def add_title(self, text, style={}):
+    def add_title(self, text, *, style={}):
         if self.axes is not None:
             raise errors.UsageError("cannot add title once axes are present")
 
         style = self._merge_defaults(style)
-        font_size = get('title_font_size', self.res, style)
-        margin = get('title_top_margin', self.res, style)
+        font_size = param.get('title_font_size', self.res, style)
+        margin = param.get('title_top_margin', self.res, style)
 
         self.ctx.save()
         self.ctx.set_font_matrix(
@@ -165,18 +166,18 @@ class Canvas:
         method must be called before any data can be plotted on the
         canvas.
 
-        Arguments:
+        :Arguments:
 
-        x_lim
+        x_lim : tuple of length 2
             A pair of numbers, giving the minimal/maximal x-coordinate
             of the data.
-        y_lim
+        y_lim : tuple of length 2
             A pair of numbers, giving the minimal/maximal y-coordinate
             of the data.
 
         """
-        x_lim = _check_range(x_lim)
-        y_lim = _check_range(y_lim)
+        x_lim = util._check_range(x_lim)
+        y_lim = util._check_range(y_lim)
 
         # The horizontal scale and offset are determined by the
         # following two equations:
@@ -192,29 +193,35 @@ class Canvas:
         return x_lim, y_lim
 
     def _viewport(self, width, height, margin, border, padding, style):
-        width = _convert_dim(width, self.res, self.width, allow_none=True)
-        height = _convert_dim(height, self.res, self.height, allow_none=True)
+        width = util._convert_dim(width, self.res, self.width,
+                                  allow_none=True)
+        height = util._convert_dim(height, self.res, self.height,
+                                   allow_none=True)
 
-        margin = _check_vec(margin, 4, True)
-        m_top = _convert_dim(margin[0], self.res, self.height, allow_none=True)
-        m_right = _convert_dim(margin[1], self.res, self.width, allow_none=True)
-        m_bottom = _convert_dim(margin[2], self.res, self.height, allow_none=True)
-        m_left = _convert_dim(margin[3], self.res, self.width, allow_none=True)
+        margin = util._check_vec(margin, 4, True)
+        m_top = util._convert_dim(margin[0], self.res, self.height,
+                                  allow_none=True)
+        m_right = util._convert_dim(margin[1], self.res, self.width,
+                                    allow_none=True)
+        m_bottom = util._convert_dim(margin[2], self.res, self.height,
+                                     allow_none=True)
+        m_left = util._convert_dim(margin[3], self.res, self.width,
+                                   allow_none=True)
 
         if isinstance(border, str):
             border = border.split()
             border_width = border[0]
         else:
             border_width = border
-        border_width = _convert_dim(border_width, self.res)
+        border_width = util._convert_dim(border_width, self.res)
         if border_width < 0:
             raise ValueError('negative border width in "%s"' % border)
 
-        padding = _check_vec(padding, 4, True)
-        p_top = _convert_dim(padding[0], self.res, self.height)
-        p_right = _convert_dim(padding[1], self.res, self.width)
-        p_bottom = _convert_dim(padding[2], self.res, self.height)
-        p_left = _convert_dim(padding[3], self.res, self.width)
+        padding = util._check_vec(padding, 4, True)
+        p_top = util._convert_dim(padding[0], self.res, self.height)
+        p_right = util._convert_dim(padding[1], self.res, self.width)
+        p_bottom = util._convert_dim(padding[2], self.res, self.height)
+        p_left = util._convert_dim(padding[3], self.res, self.width)
 
         total_w = sum(x for x in [m_left, border_width, p_left, width,
                                   p_right, border_width, m_right]
@@ -269,12 +276,13 @@ class Canvas:
         ctx.rectangle(x, y, w, h)
         ctx.clip()
 
-        res = Canvas(ctx, x, y, w, h, self.res, style=self._merge_defaults(style))
+        res = Canvas(ctx, x, y, w, h,
+                     res=self.res, style=self._merge_defaults(style))
         res.add_padding([p_top / self.res, p_right / self.res,
                          p_bottom / self.res, p_left / self.res])
         return res, border_rect
 
-    def viewport(self, width=None, height=None, margin=None, border=0,
+    def viewport(self, *, width=None, height=None, margin=None, border=0,
                  padding=0, style={}):
         """Get a new canvas representing a rectangular sub-region of the
         current canvas.
@@ -283,7 +291,7 @@ class Canvas:
         res, _ = self._viewport(width, height, margin, border, padding, style)
         return res
 
-    def subplot(self, cols, rows, idx, padding=0, style={}):
+    def subplot(self, cols, rows, idx, *, padding=0, style={}):
         """Split the current canvas into a `cols`-times-`rows` grid and return
         the sub-canvas corresponding to column `idx % cols` and row
         `idx // cols` (where both row and column counts start with 0).
@@ -303,10 +311,10 @@ class Canvas:
                              padding=padding)
 
     def _layout_labels(self, x_lim, y_lim, aspect, font_ctx):
-        opt_spacing = get('axis_tick_opt_spacing', self.res, self.style)
+        opt_spacing = param.get('axis_tick_opt_spacing', self.res, self.style)
 
         font_extents = font_ctx.font_extents()
-        x_label_sep = get('axis_x_label_sep', self.res, self.style)
+        x_label_sep = param.get('axis_x_label_sep', self.res, self.style)
         if aspect is None:
             # horizontal axis
             best_p = np.inf
@@ -316,8 +324,8 @@ class Canvas:
                     break
 
                 labels = ["%g" % pos for pos in steps]
-                p = axis._penalties(self.width, x_lim, lim, steps, labels, True,
-                                    font_ctx, x_label_sep,
+                p = axis._penalties(self.width, x_lim, lim, steps, labels,
+                                    True, font_ctx, x_label_sep,
                                     min(self.width/2, opt_spacing))
                 ps = np.array([1.0, 1.0, 1.0, 1.0]).dot(p)
                 if ps < best_p:
@@ -336,8 +344,9 @@ class Canvas:
                     break
 
                 labels = ["%g" % pos for pos in steps]
-                p = axis._penalties(self.height, y_lim, lim, steps, labels, False,
-                                    font_ctx, 0.0, min(self.height/2, opt_spacing))
+                p = axis._penalties(self.height, y_lim, lim, steps, labels,
+                                    False, font_ctx, 0.0,
+                                    min(self.height/2, opt_spacing))
                 ps = np.array([1.0, 1.0, 1.0, 1.0]).dot(p)
                 if ps < best_p:
                     best_p = ps
@@ -381,7 +390,7 @@ class Canvas:
             best_ylim, zip(best_ysteps, best_ylabels),
         ]
 
-    def draw_axes(self, x_lim, y_lim, aspect=None, width=None, height=None,
+    def draw_axes(self, x_lim, y_lim, aspect=None, width=None, height=None, *,
                   margin=None, border=None, padding=None, style={}):
         """Draw a set of coordinate axes and return a new canvas representing
         the data area inside the axes.
@@ -392,26 +401,26 @@ class Canvas:
         if margin is None:
             margin = [None, None, None, None]
         else:
-            margin = _check_vec(margin, 4, True)
+            margin = util._check_vec(margin, 4, True)
         if margin[0] is None:
-            margin[0] = get('axis_margin_top', self.res, style) / self.res
+            margin[0] = param.get('axis_margin_top', self.res, style) / self.res
         if margin[1] is None:
-            margin[1] = get('axis_margin_right', self.res, style) / self.res
+            margin[1] = param.get('axis_margin_right', self.res, style) / self.res
         if margin[2] is None:
-            margin[2] = get('axis_margin_bottom', self.res, style) / self.res
+            margin[2] = param.get('axis_margin_bottom', self.res, style) / self.res
         if margin[3] is None:
-            margin[3] = get('axis_margin_left', self.res, style) / self.res
+            margin[3] = param.get('axis_margin_left', self.res, style) / self.res
 
         if border is None:
-            border = get('axis_lw', self.res, style) / self.res
+            border = param.get('axis_lw', self.res, style) / self.res
         if padding is None:
             padding = "2mm"
         axes, rect = self._viewport(width, height, margin, border, padding,
                                     style)
 
-        tick_width = get('axis_tick_width', self.res, axes.style)
-        tick_length = get('axis_tick_length', self.res, axes.style)
-        font_size = get('axis_font_size', self.res, axes.style)
+        tick_width = param.get('axis_tick_width', self.res, axes.style)
+        tick_length = param.get('axis_tick_length', self.res, axes.style)
+        font_size = param.get('axis_font_size', self.res, axes.style)
         self.ctx.save()
         self.ctx.set_line_cap(cairo.LINE_CAP_BUTT)
         self.ctx.set_font_matrix(
@@ -425,16 +434,16 @@ class Canvas:
             x_lim, y_lim, aspect, self.ctx)
         axes.set_limits(x_lim, y_lim)
         ascent, descent, _, _, _ = self.ctx.font_extents()
-        x_label_dist = get('axis_x_label_dist', self.res, style)
+        x_label_dist = param.get('axis_x_label_dist', self.res, style)
         for x_pos, x_lab in x_labels:
             x_pos = axes.offset[0] + x_pos * axes.scale[0]
             ext = self.ctx.text_extents(x_lab)
             self.ctx.move_to(x_pos, rect[1] - tick_length)
             self.ctx.line_to(x_pos, rect[1] + tick_length)
-            self.ctx.move_to(x_pos - .5 * ext[4],
-                             rect[1] - .5 * tick_length - x_label_dist - ascent)
+            self.ctx.move_to(x_pos - .5*ext[4],
+                             rect[1] - .5*tick_length - x_label_dist - ascent)
             self.ctx.show_text(x_lab)
-        y_label_dist = get('axis_y_label_dist', self.res, style)
+        y_label_dist = param.get('axis_y_label_dist', self.res, style)
         for y_pos, y_lab in y_labels:
             y_pos = axes.offset[1] + y_pos * axes.scale[1]
             ext = self.ctx.text_extents(y_lab)
@@ -449,30 +458,69 @@ class Canvas:
         self.axes = axes
         return axes
 
-    def draw_lines(self, x, y=None, style={}):
-        x, y = _check_coords(x, y)
+    def draw_lines(self, x, y=None, *, style={}):
+        """Draw polygonal line segments.
+
+        :Arguments:
+
+        x : array with ``shape=(n,)`` or ``shape=(n,2)``
+            The vertex coordinates of the line segments.  If `y` is
+            given, `x` must be one-dimensional and the vertices are
+            ``(x[0], y[0])``, ..., ``(x[n-1], y[n-1])``.  Otherwise, `x`
+            must be two-dimensional with two columns and the vertices
+            are ``x[0,:]``, ..., ``x[n-1,:]``.
+
+        y : array with ``shape=(n,)``, optional
+            See the description of `x`.
+
+        style : dict
+            Parameters setting the line width and color.
+
+        :Description:
+
+        The given vertices are connected by a chain of line segments.
+        Vertices where at least one of the coordinates is ``nan`` are
+        ignored and the line is interupted where such vertices occur.
+
+        """
+
+        x, y = util._check_coords(x, y)
         x = self.offset[0] + self.scale[0] * x
         y = self.offset[1] + self.scale[1] * y
         style = self._merge_defaults(style)
 
         self.ctx.save()
-        lw = get('plot_lw', self.res, style)
+        lw = param.get('plot_lw', self.res, style)
+        col = param.get('plot_col', self.res, style)
         self.ctx.set_line_width(lw)
-        self.ctx.move_to(x[0], y[0])
-        for i in range(1, len(x)):
-            self.ctx.line_to(x[i], y[i])
+        self.ctx.set_source_rgba(*col)
+        nan = np.logical_or(np.isnan(x), np.isnan(y)).nonzero()[0]
+        nan = [-1] + list(nan) + [len(x)]
+        for j in range(1, len(nan)):
+            i0 = nan[j-1] + 1
+            i1 = nan[j]
+            if i0 >= i1:
+                continue
+            self.ctx.move_to(x[i0], y[i0])
+            if i1 == i0+1:
+                # only one vertex, so draw a point instead of a line
+                self.ctx.line_to(x[i0], y[i0])
+                continue
+            for i in range(i0+1, i1):
+                self.ctx.line_to(x[i], y[i])
         self.ctx.stroke()
         self.ctx.restore()
 
-    def plot(self, x, y=None, aspect=None, x_lim=None, y_lim=None, width=None,
-             height=None, margin=None, border=None, padding=None, style={}):
+    def plot(self, x, y=None, *, aspect=None, x_lim=None, y_lim=None,
+             width=None, height=None, margin=None, border=None, padding=None,
+             style={}):
         """Draw a line plot."""
-        x, y = _check_coords(x, y)
+        x, y = util._check_coords(x, y)
         if self.axes is None:
             if x_lim is None:
-                x_lim = (np.amin(x), np.amax(x))
+                x_lim = (np.nanmin(x), np.nanmax(x))
             if y_lim is None:
-                y_lim = (np.amin(y), np.amax(y))
+                y_lim = (np.nanmin(y), np.nanmax(y))
             self.draw_axes(
                 x_lim, y_lim, aspect=aspect, width=width,
                 height=height, margin=margin, border=border, padding=padding,
@@ -480,16 +528,17 @@ class Canvas:
         self.axes.draw_lines(x, y, style=style)
         return self.axes
 
-    def draw_points(self, x, y=None, style={}):
-        x, y = _check_coords(x, y)
-        x = self.offset[0] + self.scale[0] * x
-        y = self.offset[1] + self.scale[1] * y
+    def draw_points(self, x, y=None, *, style={}):
         style = self._merge_defaults(style)
 
+        x, y = util._check_coords(x, y)
+        x = self.offset[0] + self.scale[0] * x
+        y = self.offset[1] + self.scale[1] * y
+
         self.ctx.save()
-        lw = get('plot_point_size', self.res, style)
-        col = get('plot_point_col', self.res, style)
-        separate = get('plot_point_separate', self.res, style)
+        lw = param.get('plot_point_size', self.res, style)
+        col = param.get('plot_point_col', self.res, style)
+        separate = param.get('plot_point_separate', self.res, style)
         self.ctx.set_line_width(lw)
         self.ctx.set_source_rgba(*col)
         if separate:
@@ -504,16 +553,16 @@ class Canvas:
             self.ctx.stroke()
         self.ctx.restore()
 
-    def scatter_plot(self, x, y=None, aspect=None, x_lim=None, y_lim=None,
+    def scatter_plot(self, x, y=None, *, aspect=None, x_lim=None, y_lim=None,
                      width=None, height=None, margin=None, border=None,
                      padding=None, style={}):
         """Draw a scatter plot."""
-        x, y = _check_coords(x, y)
+        x, y = util._check_coords(x, y)
         if self.axes is None:
             if x_lim is None:
-                x_lim = (np.amin(x), np.amax(x))
+                x_lim = (np.nanmin(x), np.nanmax(x))
             if y_lim is None:
-                y_lim = (np.amin(y), np.amax(y))
+                y_lim = (np.nanmin(y), np.nanmax(y))
             self.draw_axes(
                 x_lim, y_lim, aspect=aspect, width=width,
                 height=height, margin=margin, border=border, padding=padding,
@@ -521,13 +570,13 @@ class Canvas:
         self.axes.draw_points(x, y)
         return self.axes
 
-    def draw_histogram(self, hist, bin_edges, style={}):
+    def draw_histogram(self, hist, bin_edges, *, style={}):
         x = self.offset[0] + self.scale[0] * bin_edges
         y = self.offset[1] + self.scale[1] * hist
         style = self._merge_defaults(style)
-        lc = get('hist_col', self.res, style)
-        lw = get('hist_lw', self.res, style)
-        fc = get('hist_fill_col', self.res, style)
+        lc = param.get('hist_col', self.res, style)
+        lw = param.get('hist_lw', self.res, style)
+        fc = param.get('hist_fill_col', self.res, style)
 
         self.ctx.save()
         for i, yi in enumerate(y):
@@ -539,7 +588,7 @@ class Canvas:
             self.ctx.set_source_rgba(*fc)
             self.ctx.fill_preserve()
         if lw and lc is not None:
-            max_bin_width = np.max(x[1:] - x[:-1])
+            max_bin_width = np.amax(x[1:] - x[:-1])
             if lw > .25 * max_bin_width:
                 lw = .25 * max_bin_width
             self.ctx.set_line_width(lw)
@@ -547,9 +596,10 @@ class Canvas:
             self.ctx.stroke()
         self.ctx.restore()
 
-    def histogram(self, x, bins=10, range=None, weights=None, density=False,
-                  x_lim=None, y_lim=None, width=None, height=None, margin=None,
-                  border=None, padding=None, style={}):
+    def histogram(self, x, *, bins=10, range=None, weights=None,
+                  density=False, x_lim=None, y_lim=None, width=None,
+                  height=None, margin=None, border=None, padding=None,
+                  style={}):
         """Draw a histogram."""
         hist, bin_edges = np.histogram(x, bins=bins, range=range,
                                        weights=weights, density=density)
@@ -561,13 +611,13 @@ class Canvas:
             self.draw_axes(
                 x_lim, y_lim, width=width, height=height, margin=margin,
                 border=border, padding=padding, style=style)
-        self.axes.draw_histogram(hist, bin_edges, style)
+        self.axes.draw_histogram(hist, bin_edges, style=style)
         return self.axes
 
     def draw_affine(self, *, x=None, y=None, a=None, b=None, style={}):
         """Draw a straight line on a canvas.
 
-        Arguments:
+        :Arguments:
 
         x (float)
             If `x` is not `None`, draw a vertical line at horizontal
@@ -586,8 +636,8 @@ class Canvas:
         """
 
         style = self._merge_defaults(style)
-        lw = get('affine_lw', self.res, style)
-        col = get('affine_line_col', self.res, style)
+        lw = param.get('affine_lw', self.res, style)
+        col = param.get('affine_line_col', self.res, style)
 
         if x is not None:
             x = float(x)

@@ -46,6 +46,7 @@ parameters = {
     'margin.right': ('width', '$margin', 'margin to the right of the plotting area'),
     'margin.top': ('height', '$margin', 'margin above the plotting area'),
     'plot_lw': ('dim', '$lw', 'default line width for plots'),
+    'plot_col': ('col', '$line_col', 'default plot line color'),
     'plot_point_col': ('col', '$line_col', 'default point color for scatter plots'),
     'plot_point_separate': ('bool', False, 'whether to draw points in a scatter plot individually'),
     'plot_point_size': ('dim', '2pt', 'point size for scatter plots'),

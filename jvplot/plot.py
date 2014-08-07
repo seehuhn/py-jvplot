@@ -45,12 +45,15 @@ class Plot(Canvas):
         The figure height.  This can either be a number to give the
         height in inches, or a string including a length unit like "10cm".
 
-    res (number)
+    res (number, optional)
         For raster image formats, `res` specifies the device resolution
         in pixels per inch.
+
+    style (dict, optional)
+        Dictionary with default plot parameter values for the figure.
     """
 
-    def __init__(self, fname, width, height, *, res=100):
+    def __init__(self, fname, width, height, *, res=100, style={}):
         """Create a new plot."""
         _, ext = os.path.splitext(fname)
         if ext == '':
@@ -89,7 +92,7 @@ class Plot(Canvas):
             ctx.fill()
             ctx.restore()
 
-        super().__init__(ctx, 0, 0, w, h, res)
+        super().__init__(ctx, 0, 0, w, h, res=res, style=style)
         self.surface = surface
         self.file_name = fname
         self.file_type = ext
