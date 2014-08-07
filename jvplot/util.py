@@ -114,3 +114,8 @@ def _check_coords(x, y):
         raise ValueError('x and y have incompatible length: %d != %d',
                          len(x), len(y))
     return x, y
+
+def _check_coord_pair(x, y):
+    if y is None:
+        x, y = list(x)
+    return float(x), float(y)

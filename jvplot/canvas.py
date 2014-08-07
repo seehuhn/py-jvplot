@@ -310,10 +310,51 @@ class Canvas:
                              margin=[None, None, i*dh, j*dw],
                              padding=padding)
 
+    def draw_text(self, text, x, y=None, *, vertical_align="baseline",
+                  rotate=0, rotate_deg=None, style={}):
+        """Add text to a canvas.
+
+        :Arguments:
+
+        vertical_align : "baseline", "top", "bottom", "center", or a dimension, optional
+        """
+        style = self._merge_defaults(style)
+        x, y = util._check_coord_pair(x, y)
+        x = self.offset[0] + self.scale[0] * x
+        y = self.offset[1] + self.scale[1] * y
+
+        # ext = self.ctx.text_extents(text)
+        ascent, descent, line_height, _, _ = self.ctx.font_extents()
+        if vertical_align == "baseline":
+            y_offs = 0
+        elif vertical_align == "top":
+            y_offs = -ascent
+        elif vertical_align == "bottom":
+            y_offs = descent
+        elif vertical_align == "center":
+            y_offs = (descent - ascent) / 2
+        else:
+            y_offs = param._convert_dim(vertical_align, self.res, line_height)
+
+        if rotate_deg is not None:
+            rotate = float(rotate_deg) / 180 * np.pi
+
+        font_size = param.get('text_font_size', self.res, style)
+        col = param.get('text_col', self.res, style)
+
+        self.ctx.save()
+        self.ctx.set_source_rgba(*col)
+        self.ctx.set_font_matrix(
+            cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
+        self.ctx.move_to(x, y)
+        self.ctx.rotate(rotate)
+        self.ctx.rel_move_to(0, y_offs)
+        self.ctx.show_text(text)
+        self.ctx.restore()
+
     def _layout_labels(self, x_lim, y_lim, aspect, font_ctx):
         opt_spacing = param.get('axis_tick_opt_spacing', self.res, self.style)
 
-        font_extents = font_ctx.font_extents()
         x_label_sep = param.get('axis_x_label_sep', self.res, self.style)
         if aspect is None:
             # horizontal axis

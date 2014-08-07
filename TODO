@@ -7,6 +7,9 @@ enhancements
   to use the functions in "axis.py"
 - add support for raster images
 - implement units 'em' and 'en'
+- Relative font sizes can be easily implemented using the
+  parent_height argument of param.get().  But what are the font sizes
+  relative to?
 
 bug fixes
 ---------
