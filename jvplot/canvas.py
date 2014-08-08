@@ -310,20 +310,51 @@ class Canvas:
                              margin=[None, None, i*dh, j*dw],
                              padding=padding)
 
-    def draw_text(self, text, x, y=None, *, vertical_align="baseline",
-                  rotate=0, rotate_deg=None, style={}):
+    def draw_text(self, text, x, y=None, *, horizontal_align="start",
+                  vertical_align="baseline", rotate=0, rotate_deg=None,
+                  padding=["1pt", "3pt"], style={}):
         """Add text to a canvas.
 
         :Arguments:
 
-        vertical_align : "baseline", "top", "bottom", "center", or a dimension, optional
+        horizontal_align : "start", "end", "left", "right", "center" or dimension, optional
+
+        vertical_align : "baseline", "top", "bottom", "center" or dimension, optional
         """
         style = self._merge_defaults(style)
         x, y = util._check_coord_pair(x, y)
         x = self.offset[0] + self.scale[0] * x
         y = self.offset[1] + self.scale[1] * y
 
-        # ext = self.ctx.text_extents(text)
+        if rotate_deg is not None:
+            rotate = float(rotate_deg) / 180 * np.pi
+
+        font_size = param.get('text_font_size', self.res, style)
+        col = param.get('text_col', self.res, style)
+        bg = param.get('text_bg', self.res, style)
+
+        padding = util._check_vec(padding, 4, True)
+        p_top = util._convert_dim(padding[0], self.res, self.height)
+        p_right = util._convert_dim(padding[1], self.res, self.width)
+        p_bottom = util._convert_dim(padding[2], self.res, self.height)
+        p_left = util._convert_dim(padding[3], self.res, self.width)
+
+        self.ctx.save()
+        self.ctx.set_font_matrix(cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
+
+        ext = self.ctx.text_extents(text)
+        if horizontal_align == "start":
+            x_offs = 0
+        elif horizontal_align == "end":
+            x_offs = -ext[4]
+        elif horizontal_align == "left":
+            x_offs = -ext[0]
+        elif horizontal_align == "right":
+            x_offs = -ext[0] - ext[2]
+        elif horizontal_align == "center":
+            x_offs = -ext[0] - .5 * ext[2]
+        else:
+            x_offs = param._convert_dim(horizontal_align, self.res, ext[2])
         ascent, descent, line_height, _, _ = self.ctx.font_extents()
         if vertical_align == "baseline":
             y_offs = 0
@@ -336,19 +367,24 @@ class Canvas:
         else:
             y_offs = param._convert_dim(vertical_align, self.res, line_height)
 
-        if rotate_deg is not None:
-            rotate = float(rotate_deg) / 180 * np.pi
+        if bg is not None:
+            self.ctx.save()
+            self.ctx.set_source_rgba(*bg)
+            self.ctx.move_to(x, y)
+            self.ctx.rotate(rotate)
+            self.ctx.rel_move_to(ext[0] + x_offs - p_left,
+                                 ext[1] + y_offs - p_bottom)
+            self.ctx.rel_line_to(ext[2] + p_left + p_right, 0)
+            self.ctx.rel_line_to(0, ext[3] + p_bottom + p_top)
+            self.ctx.rel_line_to(- ext[2] - p_right - p_left, 0)
+            self.ctx.close_path()
+            self.ctx.fill()
+            self.ctx.restore()
 
-        font_size = param.get('text_font_size', self.res, style)
-        col = param.get('text_col', self.res, style)
-
-        self.ctx.save()
         self.ctx.set_source_rgba(*col)
-        self.ctx.set_font_matrix(
-            cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
         self.ctx.move_to(x, y)
         self.ctx.rotate(rotate)
-        self.ctx.rel_move_to(0, y_offs)
+        self.ctx.rel_move_to(x_offs, y_offs)
         self.ctx.show_text(text)
         self.ctx.restore()
 

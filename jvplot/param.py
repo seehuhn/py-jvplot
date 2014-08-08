@@ -50,6 +50,7 @@ parameters = {
     'plot_point_col': ('col', '$line_col', 'default point color for scatter plots'),
     'plot_point_separate': ('bool', False, 'whether to draw points in a scatter plot individually'),
     'plot_point_size': ('dim', '2pt', 'point size for scatter plots'),
+    'text_bg': ('col', 'rgba(255,255,255,.9)', 'default text background color'),
     'text_col': ('col', 'black', 'default text color'),
     'text_font_size': ('dim', '$font_size', 'default text font size'),
     'title_font_size': ('dim', '$font_size', 'font size for titles'),
