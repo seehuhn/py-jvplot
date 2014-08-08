@@ -66,13 +66,13 @@ def _try_steps(a, b):
 
 def _fixup_lim(lim):
     try:
-        a, b = lim
+        a, b = [float(x) for x in lim]
     except:
         tmpl = 'axis limits must be pairs of numbers, not "%s"'
         raise TypeError(tmpl % repr(lim))
-    if not a < b:
-        tmpl = 'lower bound %s must not be smaller than upper bound %s'
-        raise  ValueError(tmpl % lim)
+    if b < a:
+        tmpl = 'lower bound %s must not be larger than upper bound %s'
+        raise ValueError(tmpl % lim)
     if a != b:
         return lim
     if a == 0:
