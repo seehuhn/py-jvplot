@@ -467,7 +467,7 @@ class Canvas:
             best_ylim, zip(best_ysteps, best_ylabels),
         ]
 
-    def draw_axes(self, x_lim, y_lim, aspect=None, width=None, height=None, *,
+    def draw_axes(self, x_lim, y_lim, *, aspect=None, width=None, height=None,
                   margin=None, border=None, padding=None, style={}):
         """Draw a set of coordinate axes and return a new canvas representing
         the data area inside the axes.
@@ -532,6 +532,10 @@ class Canvas:
         self.ctx.stroke()
         self.ctx.restore()
 
+        axes.x_lim = x_lim
+        axes.x_labels = x_labels
+        axes.y_lim = y_lim
+        axes.y_labels = y_labels
         self.axes = axes
         return axes
 

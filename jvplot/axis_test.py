@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 from . import axis
-from .plot import Plot
+from . import plot
 
 def test_scale():
     assert axis._scale(0) == 1
@@ -28,7 +28,7 @@ class AxesPenaltyTestCase(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
         fname = os.path.join(self.tempdir, "test.pdf")
-        self.plot = Plot(fname, 720, 360)
+        self.plot = plot.Plot(fname, 720, 360)
         self.plot.set_limits((0, 1), (0, 3))
 
     def tearDown(self):
@@ -107,3 +107,39 @@ class AxesPenaltyTestCase(unittest.TestCase):
         p = axis._penalties(self.plot.height, (0, 1), (0, 2), [], [], True,
                             None, 1, 1)
         nose.tools.assert_almost_equals(p[3], 1.0)
+
+def test_axes_without_aspect():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        limits = [ (0,1), (0,0), (1, 999), (-1, 1001) ]
+        for x_lim in limits:
+            for y_lim in limits:
+                fname = os.path.join(tmpdir, "test.pdf")
+                fig = plot.Plot(fname, 5, 5)
+                fig.draw_axes(x_lim, y_lim)
+                plot_x_lim = fig.axes.x_lim
+                print("x_lim", x_lim, plot_x_lim)
+                assert plot_x_lim[0] <= x_lim[0] <= x_lim[1] <= plot_x_lim[1]
+                plot_y_lim = fig.axes.y_lim
+                print("y_lim", y_lim, plot_y_lim)
+                assert plot_y_lim[0] <= y_lim[0] <= y_lim[1] <= plot_y_lim[1]
+                fig.close()
+
+def test_axes_with_aspect():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        limits = [ (0,1), (0,0), (1, 999), (-1, 1001) ]
+        for x_lim in limits:
+            for y_lim in limits:
+                for aspect in [ 1, .5, 2 ]:
+                    fname = os.path.join(tmpdir, "test.pdf")
+                    fig = plot.Plot(fname, 5, 5)
+                    fig.draw_axes(x_lim, y_lim, aspect=1)
+                    plot_x_lim = fig.axes.x_lim
+                    print("x_lim", x_lim, plot_x_lim)
+                    assert plot_x_lim[0] <= x_lim[0] <= x_lim[1] <= plot_x_lim[1]
+                    plot_y_lim = fig.axes.y_lim
+                    print("y_lim", y_lim, plot_y_lim)
+                    assert plot_y_lim[0] <= y_lim[0] <= y_lim[1] <= plot_y_lim[1]
+                    nose.tools.assert_almost_equals(
+                        (plot_x_lim[1] - plot_x_lim[0]) / (plot_y_lim[1] - plot_y_lim[0]),
+                        fig.axes.width / fig.axes.height)
+                    fig.close()

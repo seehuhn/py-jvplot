@@ -1,10 +1,12 @@
 enhancements
 ------------
 
-- add support for axis labels
-- implement logarithmic axes
 - convert the code in `Canvas._layout_labels()` (when no aspect ratio is set)
   to use the functions in "axis.py"
+- split `axis._try_pairs` into unit-testable bits
+- implement logarithmic axes
+
+- add support for axis labels
 - add support for raster images
 - implement units 'em' and 'en'
 - Relative font sizes can be easily implemented using the
@@ -14,5 +16,4 @@ enhancements
 bug fixes
 ---------
 
-- split `axis._try_pairs` into unit-testable bits
 - should histograms have padding-bottom = 0?
