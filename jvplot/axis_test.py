@@ -117,10 +117,9 @@ def test_axes_without_aspect():
                 fig = plot.Plot(fname, 5, 5)
                 fig.draw_axes(x_lim, y_lim)
                 plot_x_lim = fig.axes.x_lim
-                print("x_lim", x_lim, plot_x_lim)
-                assert plot_x_lim[0] <= x_lim[0] <= x_lim[1] <= plot_x_lim[1]
                 plot_y_lim = fig.axes.y_lim
-                print("y_lim", y_lim, plot_y_lim)
+                print("x_lim", x_lim, plot_x_lim, "y_lim", y_lim, plot_y_lim)
+                assert plot_x_lim[0] <= x_lim[0] <= x_lim[1] <= plot_x_lim[1]
                 assert plot_y_lim[0] <= y_lim[0] <= y_lim[1] <= plot_y_lim[1]
                 fig.close()
 
@@ -134,10 +133,9 @@ def test_axes_with_aspect():
                     fig = plot.Plot(fname, 5, 5)
                     fig.draw_axes(x_lim, y_lim, aspect=1)
                     plot_x_lim = fig.axes.x_lim
-                    print("x_lim", x_lim, plot_x_lim)
-                    assert plot_x_lim[0] <= x_lim[0] <= x_lim[1] <= plot_x_lim[1]
                     plot_y_lim = fig.axes.y_lim
-                    print("y_lim", y_lim, plot_y_lim)
+                    print("x_lim", x_lim, plot_x_lim, "y_lim", y_lim, plot_y_lim)
+                    assert plot_x_lim[0] <= x_lim[0] <= x_lim[1] <= plot_x_lim[1]
                     assert plot_y_lim[0] <= y_lim[0] <= y_lim[1] <= plot_y_lim[1]
                     nose.tools.assert_almost_equals(
                         (plot_x_lim[1] - plot_x_lim[0]) / (plot_y_lim[1] - plot_y_lim[0]),

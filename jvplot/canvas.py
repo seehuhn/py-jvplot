@@ -506,10 +506,10 @@ class Canvas:
 
         x_lim = _fixup_lim(x_lim)
         y_lim = _fixup_lim(y_lim)
-
         x_lim, x_labels, y_lim, y_labels = axes._layout_labels(
             x_lim, y_lim, aspect, self.ctx)
         axes.set_limits(x_lim, y_lim)
+
         ascent, descent, _, _, _ = self.ctx.font_extents()
         x_label_dist = param.get('axis_x_label_dist', self.res, style)
         for x_pos, x_lab in x_labels:
