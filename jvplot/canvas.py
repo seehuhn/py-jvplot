@@ -291,7 +291,7 @@ class Canvas:
         res, _ = self._viewport(width, height, margin, border, padding, style)
         return res
 
-    def subplot(self, cols, rows, idx, *, padding=0, style={}):
+    def subplot(self, cols, rows, idx=None, *, padding=0, style={}):
         """Split the current canvas into a `cols`-times-`rows` grid and return
         the sub-canvas corresponding to column `idx % cols` and row
         `idx // cols` (where both row and column counts start with 0).
@@ -299,9 +299,19 @@ class Canvas:
         """
         if rows <= 0 or cols <= 0:
             return ValueError('invalid %d by %d arrangement' % (cols, rows))
-        if not 0 <= idx < cols*rows:
+
+        if idx is None:
+            if (hasattr(self, '_last_subplot') and
+                self._last_subplot[0] == cols and
+                self._last_subplot[1] == rows):
+                idx = (self._last_subplot[2] + 1) % (cols * rows)
+            else:
+                idx = 0
+        if not 0 <= idx < cols * rows:
             tmpl = 'invalid index %d, not in range 0, ... %d'
             raise ValueError(tmpl % (idx, cols*rows-1))
+        self._last_subplot = (cols, rows, idx)
+
         i = idx // cols
         j = idx % cols
         dw = self.width / cols / self.res
