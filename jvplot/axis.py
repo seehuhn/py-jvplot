@@ -7,66 +7,84 @@ def _scale(k):
     c = [1.0, 2.0, 2.5, 5.0][k%4]
     return c * 10**(k//4)
 
-def _ticks(a, b, scale):
-    start = math.ceil(a / scale)
-    stop = math.floor(b / scale) + 1
-    return [k*scale for k in range(start, stop)]
-
-def _next_scale(x):
+def _largest_scale(x):
     k = math.floor(math.log10(_q * x) * 4) + 1
     if _scale(k) <= x:
         k += 1
     return k
 
-def _try_pairs2(x_lim, x_step, y_lim, y_step, q):
-    x_scale = _scale(x_step)
-    x_mid = .5*(x_lim[0] + x_lim[1])
-    x_r = max(x_lim[1] - x_lim[0], (y_lim[1] - y_lim[0]) * q) / 2
-    y_scale = _scale(y_step)
-    y_mid = .5*(x_lim[0] + x_lim[1])
-    y_r = max(y_lim[1] - y_lim[0], (x_lim[1] - x_lim[0]) / q) / 2
+def _ticks(a, b, spacing):
+    start = math.ceil(a / spacing)
+    stop = math.floor(b / spacing)
+    return [k * spacing for k in range(start, stop+1)]
 
-    a = np.ceil((x_mid - x_r) / x_scale) * x_scale
-    if a > x_lim[0]:
-        a -= x_scale
-    for x0 in [a, x_mid - x_r]:
-        b = np.ceil((x0 + 2 * x_r) / x_scale) * x_scale
-        for x3 in [x0 + 2 * x_r, b]:
-            x_ticks = _ticks(x0, x3, x_scale)
-            if len(x_ticks) < 2:
-                continue
-            s = (x3 - x0) / q
-            c1 = y_mid - .5*s
-            c2 = np.floor(c1 / y_scale) * y_scale
-            for y0, y3 in [(c1, c1+s), (c2, c2+s)]:
-                y_ticks = _ticks(y0, y3, y_scale)
-                if len(y_ticks) < 2:
-                    continue
-                yield (x0, x3), x_ticks, (y0, y3), y_ticks
+def _try_single(lim):
+    """Generate a selection of plausible axis tick placements.  This
+    generator yields 2-tuples containing the suggested axis limits and
+    tick label positions.
 
-    a = np.ceil((y_mid - y_r) / y_scale) * y_scale
-    if a > y_lim[0]:
-        a -= y_scale
-    for y0 in [a, y_mid - y_r]:
-        b = np.ceil((y0 + 2 * y_r) / y_scale) * y_scale
-        for y3 in [y0 + 2*y_r, b]:
-            y_ticks = _ticks(y0, y3, y_scale)
-            if len(y_ticks) < 2:
-                continue
-            s = (y3 - y0) * q
-            c1 = x_mid - .5*s
-            c2 = np.floor(c1 / x_scale) * x_scale
-            for x0, x3 in [(c1, c1+s), (c2, c2+s)]:
-                x_ticks = _ticks(x0, x3, x_scale)
-                if len(x_ticks) < 2:
-                    continue
-                yield (x0, x3), x_ticks, (y0, y3), y_ticks
+    """
+    k0 = _largest_scale(lim[1] - lim[0])
+    for k in range(k0 - 3, k0 + 1):
+        spacing = _scale(k)
+        i0 = math.floor(lim[0] / spacing)
+        i1 = math.ceil(lim[1] / spacing)
+        ticks = [k * spacing for k in range(i0, i1+1)]
+        yield (i0*spacing, i1*spacing), ticks
+        if len(ticks) > 2:
+            yield (lim[0], i1*spacing), ticks[1:]
+            yield (i0*spacing, lim[1]), ticks[:-1]
+        if len(ticks) > 3:
+            yield (lim[0], lim[1]), ticks[1:-1]
 
-def _try_pairs(x_lim, x_max_step, y_lim, y_max_step, q):
-    for x_step in range(x_max_step, x_max_step-5, -1):
-        for y_step in range(y_max_step, y_max_step-5, -1):
-            for data in _try_pairs2(x_lim, x_step, y_lim, y_step, q):
-                yield data
+def _try_second(lim, length):
+    assert lim[1] - lim[0] <= length
+    mid = (lim[0] + lim[1]) / 2
+    a = mid - length / 2
+    b = mid + length / 2
+
+    k0 = _largest_scale(lim[1] - lim[0])
+    for k in range(k0 - 6, k0 + 1):
+        spacing = _scale(k)
+
+        candidates = []
+        candidates.append((a, b))
+
+        ak = round(mid / spacing) * spacing - length / 2
+        bk = round(mid / spacing) * spacing + length / 2
+        candidates.append((ak, bk))
+
+        ak = (math.floor(mid / spacing) + .5) * spacing - length / 2
+        bk = (math.floor(mid / spacing) + .5) * spacing + length / 2
+        candidates.append((ak, bk))
+
+        ak = math.floor(a / spacing) * spacing
+        bk = ak + length
+        candidates.append((ak, bk))
+
+        bk = math.ceil(b / spacing) * spacing
+        ak = bk - length
+        candidates.append((ak, bk))
+
+    for a, b in candidates:
+        if a > lim[0] or b < lim[1]:
+            continue
+        i0 = math.ceil(a / spacing)
+        i1 = math.floor(b / spacing)
+        ticks = [k * spacing for k in range(i0, i1+1)]
+        yield (a, b), ticks
+
+def _try_pairs(x_data_lim, y_data_lim, q):
+    if x_data_lim[1] - x_data_lim[0] >= (y_data_lim[1] - y_data_lim[0]) * q:
+        for x_axis_lim, x_ticks in _try_single(x_data_lim):
+            length = (x_axis_lim[1] - x_axis_lim[0]) / q
+            for y_axis_lim, y_ticks in _try_second(y_data_lim, length):
+                yield x_axis_lim, x_ticks, y_axis_lim, y_ticks
+    else:
+        for y_axis_lim, y_ticks in _try_single(y_data_lim):
+            length = (y_axis_lim[1] - y_axis_lim[0]) * q
+            for x_axis_lim, x_ticks in _try_second(x_data_lim, length):
+                yield x_axis_lim, x_ticks, y_axis_lim, y_ticks
 
 def _penalties(length, data_lim, axis_lim, ticks, labels, is_parallel,
                font_ctx, min_label_sep, best_tick_dist):

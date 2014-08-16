@@ -32,38 +32,6 @@ def _prepare_context(ctx):
     ctx.set_line_join(cairo.LINE_JOIN_ROUND)
     ctx.set_line_cap(cairo.LINE_CAP_ROUND)
 
-def _scales(x):
-    "return decreasing scales smaller than x"
-    step = int(np.log10(x))
-    while True:
-        base = 10**step
-        if 5 * base < x:
-            yield 5 * base
-        if 2.5 * base < x:
-            yield 2.5 * base
-        if 2 * base < x:
-            yield 2 * base
-        yield base
-        step -= 1
-
-def _try_steps(a, b):
-    for scale in _scales(b-a):
-        step_a = int(np.floor(a / scale + 0.01))
-        step_b = int(np.ceil(b / scale - 0.01))
-        steps = list(np.arange(step_a, step_b+1) * scale)
-
-        n = len(steps)
-        can_drop_left = n > 2 and (steps[1] - a) < .5 * scale
-        can_drop_right = n > 2 and (b - steps[-2]) < .5 * scale
-        if n > 3 and can_drop_left and can_drop_right:
-            yield (a, b), steps[1:-1]
-        if n > 2 and can_drop_left:
-            yield (a, step_b*scale), steps[1:]
-        if n > 2 and can_drop_right:
-            yield (step_a*scale, b), steps[:-1]
-        if n > 1:
-            yield (step_a*scale, step_b*scale), steps
-
 def _fixup_lim(lim):
     try:
         a, b = [float(x) for x in lim]
@@ -405,11 +373,7 @@ class Canvas:
         if aspect is None:
             # horizontal axis
             best_p = np.inf
-            stop = 3
-            for lim, steps in _try_steps(*x_lim):
-                if stop < 0:
-                    break
-
+            for lim, steps in axis._try_single(x_lim):
                 labels = ["%g" % pos for pos in steps]
                 p = axis._penalties(self.width, x_lim, lim, steps, labels,
                                     True, font_ctx, x_label_sep,
@@ -420,16 +384,10 @@ class Canvas:
                     best_xlim = lim
                     best_xsteps = steps
                     best_xlabels = labels
-                else:
-                    stop -= 1
 
             # vertical axis
             best_p = np.inf
-            stop = 3
-            for lim, steps in _try_steps(*y_lim):
-                if stop < 0:
-                    break
-
+            for lim, steps in axis._try_single(y_lim):
                 labels = ["%g" % pos for pos in steps]
                 p = axis._penalties(self.height, y_lim, lim, steps, labels,
                                     False, font_ctx, 0.0,
@@ -440,17 +398,10 @@ class Canvas:
                     best_ylim = lim
                     best_ysteps = steps
                     best_ylabels = labels
-                else:
-                    stop -= 1
         else:                   # aspect ratio is set
-            q = aspect * self.width / self.height
-            x_range = max(x_lim[1] - x_lim[0], (y_lim[1] - y_lim[0]) * q)
-            x_start = axis._next_scale(x_range)
-            y_range = max(y_lim[1] - y_lim[0], (x_lim[1] - x_lim[0]) / q)
-            y_start = axis._next_scale(y_range)
-
             best_p = np.inf
-            for data in axis._try_pairs(x_lim, x_start, y_lim, y_start, q):
+            q = aspect * self.width / self.height
+            for data in axis._try_pairs(x_lim, y_lim, q):
                 x_axis_lim, x_ticks, y_axis_lim, y_ticks = data
                 x_labels = ["%g" % pos for pos in x_ticks]
                 px = axis._penalties(self.width, x_lim, x_axis_lim, x_ticks,
@@ -497,7 +448,6 @@ class Canvas:
             margin[2] = param.get('axis_margin_bottom', self.res, style) / self.res
         if margin[3] is None:
             margin[3] = param.get('axis_margin_left', self.res, style) / self.res
-
         if border is None:
             border = param.get('axis_lw', self.res, style) / self.res
         if padding is None:
@@ -547,6 +497,7 @@ class Canvas:
         axes.y_lim = y_lim
         axes.y_labels = y_labels
         self.axes = axes
+
         return axes
 
     def draw_lines(self, x, y=None, *, style={}):

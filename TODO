@@ -1,3 +1,16 @@
+API design
+----------
+
+- rename Canvas.add_title() to Canvas.title()?
+- swap the row/column arguments of Canvas.subplot()?
+- rationalise use of the margin/border/padding scheme?
+
+bug fixes
+---------
+
+- Title positions look odd when axes are used.  Can this be fixed somehow?
+- should histograms have padding-bottom = 0?
+
 enhancements
 ------------
 
@@ -12,8 +25,4 @@ enhancements
 - Relative font sizes can be easily implemented using the
   parent_height argument of param.get().  But what are the font sizes
   relative to?
-
-bug fixes
----------
-
-- should histograms have padding-bottom = 0?
+- use a complicated clip region to preserve the inward halfs of the axis ticks?

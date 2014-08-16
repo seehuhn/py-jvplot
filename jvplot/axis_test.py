@@ -15,9 +15,9 @@ def test_scale():
     nose.tools.assert_almost_equals(axis._scale(3), 5)
     nose.tools.assert_almost_equals(axis._scale(4), 10)
 
-def test_next_scale():
+def test_largest_scale():
     for x in np.linspace(0.1, 100, 1001):
-        k = axis._next_scale(x)
+        k = axis._largest_scale(x)
         y = axis._scale(k)
         assert y > x, "%f (tick %d) > %f failed" % (y, k, x)
         z = axis._scale(k-1)
