@@ -8,19 +8,19 @@ import unittest
 from . import axis
 from . import plot
 
-def test_scale():
-    assert axis._scale(0) == 1
-    nose.tools.assert_almost_equals(axis._scale(1), 2)
-    nose.tools.assert_almost_equals(axis._scale(2), 2.5)
-    nose.tools.assert_almost_equals(axis._scale(3), 5)
-    nose.tools.assert_almost_equals(axis._scale(4), 10)
+def test_scale_length():
+    assert axis._scale_length(0) == 1
+    nose.tools.assert_almost_equals(axis._scale_length(1), 2)
+    nose.tools.assert_almost_equals(axis._scale_length(2), 2.5)
+    nose.tools.assert_almost_equals(axis._scale_length(3), 5)
+    nose.tools.assert_almost_equals(axis._scale_length(4), 10)
 
-def test_largest_scale():
-    for x in np.linspace(0.1, 100, 1001):
-        k = axis._largest_scale(x)
-        y = axis._scale(k)
+def test_smallest_scale_larger_than():
+    for x in np.linspace(0.1, 100, 1000):
+        k = axis._smallest_scale_larger_than(x)
+        y = axis._scale_length(k)
         assert y > x, "%f (tick %d) > %f failed" % (y, k, x)
-        z = axis._scale(k-1)
+        z = axis._scale_length(k-1)
         assert z <= x, "%f (tick %d) <= %f failed" % (z, k-1, x)
 
 class AxesPenaltyTestCase(unittest.TestCase):

@@ -9,16 +9,18 @@ bug fixes
 ---------
 
 - Title positions look odd when axes are used.  Can this be fixed somehow?
-- should histograms have padding-bottom = 0?
+  Maybe add a `title` keyword argument to `Canvas.plot()` or similar?
+- if the right/top-most tick label does not fit within the padding,
+  move the label inwards a bit.
+- autogenerate doc-strings for configuration parameters
 
 enhancements
 ------------
 
-- convert the code in `Canvas._layout_labels()` (when no aspect ratio is set)
-  to use the functions in "axis.py"
-- split `axis._try_pairs` into unit-testable bits
+- add unit tests for `axis._try_pairs`
 - implement logarithmic axes
 
+- add support for custom tick label formats, e.g. for dates
 - add support for axis labels
 - add support for raster images
 - implement units 'em' and 'en'
@@ -26,3 +28,6 @@ enhancements
   parent_height argument of param.get().  But what are the font sizes
   relative to?
 - use a complicated clip region to preserve the inward halfs of the axis ticks?
+- should histograms have padding-bottom = 0?
+- should the box centers or the box boundaries be labelled in histograms?
+- choose a nicer style for the sphinx HTML output

@@ -3,13 +3,25 @@ import numpy as np
 
 _q = 10**0.25 / 2
 
-def _scale(k):
+def _scale_length(k):
+    """Get the scale length k.
+
+    Scale lengths are indexed by integers k, and are ..., 0.1, 0.2,
+    0.25, 0.5, 1.0, 2.0, 2.5, 5.0, 10.0, ..., where k=0 corresponds to
+    the scale length 1.0.  Larger values of k correspond to larger
+    scale lengths.
+
+    """
     c = [1.0, 2.0, 2.5, 5.0][k%4]
     return c * 10**(k//4)
 
-def _largest_scale(x):
+def _smallest_scale_larger_than(x):
+    """Get the smallest scale with scale length >=x.  This corresponds to
+    rounding up to the nearest scale length.
+
+    """
     k = math.floor(math.log10(_q * x) * 4) + 1
-    if _scale(k) <= x:
+    if _scale_length(k) <= x:
         k += 1
     return k
 
@@ -24,9 +36,9 @@ def _try_single(lim):
     tick label positions.
 
     """
-    k0 = _largest_scale(lim[1] - lim[0])
+    k0 = _smallest_scale_larger_than(lim[1] - lim[0])
     for k in range(k0 - 3, k0 + 1):
-        spacing = _scale(k)
+        spacing = _scale_length(k)
         i0 = math.floor(lim[0] / spacing)
         i1 = math.ceil(lim[1] / spacing)
         ticks = [k * spacing for k in range(i0, i1+1)]
@@ -43,9 +55,9 @@ def _try_second(lim, length):
     a = mid - length / 2
     b = mid + length / 2
 
-    k0 = _largest_scale(lim[1] - lim[0])
+    k0 = _smallest_scale_larger_than(lim[1] - lim[0])
     for k in range(k0 - 6, k0 + 1):
-        spacing = _scale(k)
+        spacing = _scale_length(k)
 
         candidates = []
         candidates.append((a, b))
@@ -90,7 +102,7 @@ def _penalties(length, data_lim, axis_lim, ticks, labels, is_parallel,
                font_ctx, min_label_sep, best_tick_dist):
     """Compute the 4 penalty values for a given axis tick configuration.
 
-    Arguments:
+    :Arguments:
 
     length
         The total axis length in device coordinate units.

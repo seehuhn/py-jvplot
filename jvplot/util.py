@@ -111,8 +111,8 @@ def _check_coords(x, y):
     if len(y.shape) != 1:
         raise ValueError('y has wrong shape %s' % y.shape)
     if len(x) != len(y):
-        raise ValueError('x and y have incompatible length: %d != %d',
-                         len(x), len(y))
+        tmpl = 'x and y have incompatible length: %d != %d'
+        raise ValueError(tmpl % (len(x), len(y)))
     return x, y
 
 def _check_coord_pair(x, y):

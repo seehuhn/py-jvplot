@@ -55,6 +55,10 @@ class Plot(Canvas):
 
     def __init__(self, fname, width, height, *, res=100, style={}):
         """Create a new plot."""
+
+        self.file_name = fname
+        """The output file name, as given in the plot.Plot constructor."""
+
         _, ext = os.path.splitext(fname)
         if ext == '':
             raise ValueError('file name "%s" lacks an extension' % fname)
