@@ -32,17 +32,31 @@ def _prepare_context(ctx):
     ctx.set_line_join(cairo.LINE_JOIN_ROUND)
     ctx.set_line_cap(cairo.LINE_CAP_ROUND)
 
-def _fixup_lim(lim):
+def _fixup_lim(lim, data=None):
+    if lim is None and data is not None:
+        lim = (None, None)
     try:
-        a, b = [float(x) for x in lim]
+        a, b = tuple(lim)
     except:
-        tmpl = 'axis limits must be pairs of numbers, not "%s"'
+        tmpl = 'axis limit must be a pair, not "%s"'
+        raise TypeError(tmpl % repr(lim))
+
+    if a is None and data is not None:
+        a = np.nanmin(data)
+    if b is None and data is not None:
+        b = np.nanmax(data)
+    try:
+        a = float(a)
+        b = float(b)
+    except:
+        tmpl = 'axis limit must be pair of numbers, not "%s"'
         raise TypeError(tmpl % repr(lim))
     if b < a:
         tmpl = 'lower bound %s must not be larger than upper bound %s'
         raise ValueError(tmpl % lim)
+
     if a != b:
-        return lim
+        return (a, b)
     if a == 0:
         return (-1, 1)
     return (min(a,0), max(a,0))
@@ -368,7 +382,6 @@ class Canvas:
 
     def _layout_labels(self, x_lim, y_lim, aspect, font_ctx):
         opt_spacing = param.get('axis_tick_opt_spacing', self.res, self.style)
-
         x_label_sep = param.get('axis_x_label_sep', self.res, self.style)
         if aspect is None:
             # horizontal axis
@@ -559,10 +572,8 @@ class Canvas:
         """Draw a line plot."""
         x, y = util._check_coords(x, y)
         if self.axes is None:
-            if x_lim is None:
-                x_lim = (np.nanmin(x), np.nanmax(x))
-            if y_lim is None:
-                y_lim = (np.nanmin(y), np.nanmax(y))
+            x_lim = _fixup_lim(x_lim, x)
+            y_lim = _fixup_lim(y_lim, y)
             self.draw_axes(
                 x_lim, y_lim, aspect=aspect, width=width,
                 height=height, margin=margin, border=border, padding=padding,
@@ -601,10 +612,8 @@ class Canvas:
         """Draw a scatter plot."""
         x, y = util._check_coords(x, y)
         if self.axes is None:
-            if x_lim is None:
-                x_lim = (np.nanmin(x), np.nanmax(x))
-            if y_lim is None:
-                y_lim = (np.nanmin(y), np.nanmax(y))
+            x_lim = _fixup_lim(x_lim, x)
+            y_lim = _fixup_lim(y_lim, y)
             self.draw_axes(
                 x_lim, y_lim, aspect=aspect, width=width,
                 height=height, margin=margin, border=border, padding=padding,
@@ -646,10 +655,8 @@ class Canvas:
         hist, bin_edges = np.histogram(x, bins=bins, range=range,
                                        weights=weights, density=density)
         if self.axes is None:
-            if x_lim is None:
-                x_lim = (np.amin(bin_edges), np.amax(bin_edges))
-            if y_lim is None:
-                y_lim = (0, np.amax(hist))
+            x_lim = _fixup_lim(x_lim, bin_edges)
+            y_lim = _fixup_lim((0, None), hist)
             self.draw_axes(
                 x_lim, y_lim, width=width, height=height, margin=margin,
                 border=border, padding=padding, style=style)

@@ -17,9 +17,9 @@ bug fixes
 enhancements
 ------------
 
-- add unit tests for `axis._try_pairs`
+- implement minor axis ticks
 - implement logarithmic axes
-
+- add more unit tests for `axis._try_pairs`
 - add support for custom tick label formats, e.g. for dates
 - add support for axis labels
 - add support for raster images
@@ -27,7 +27,8 @@ enhancements
 - Relative font sizes can be easily implemented using the
   parent_height argument of param.get().  But what are the font sizes
   relative to?
-- use a complicated clip region to preserve the inward halfs of the axis ticks?
-- should histograms have padding-bottom = 0?
-- should the box centers or the box boundaries be labelled in histograms?
-- choose a nicer style for the sphinx HTML output
+- Use a complicated clip region to preserve the inward halfs of the axis ticks?
+  Or provide a function to redraw the tick labels?
+- Should histograms have padding-bottom = 0?
+- Should the box centers or the box boundaries be labelled in histograms?
+- Choose a nicer style for the sphinx HTML output.

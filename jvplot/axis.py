@@ -8,7 +8,7 @@ def _scale_length(k):
 
     Scale lengths are indexed by integers k, and are ..., 0.1, 0.2,
     0.25, 0.5, 1.0, 2.0, 2.5, 5.0, 10.0, ..., where k=0 corresponds to
-    the scale length 1.0.  Larger values of k correspond to larger
+    the scale length 1.0 and larger values of k correspond to larger
     scale lengths.
 
     """
