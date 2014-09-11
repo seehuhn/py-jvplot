@@ -14,6 +14,7 @@
 import nose.tools
 from .util import _convert_dim
 
+
 def test_convert_dim():
     for res in [50, 72, 100]:
         tests = [
