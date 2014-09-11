@@ -3,6 +3,7 @@ import numpy as np
 
 _q = 10**0.25 / 2
 
+
 def _scale_length(k):
     """Get the scale length k.
 
@@ -12,8 +13,9 @@ def _scale_length(k):
     scale lengths.
 
     """
-    c = [1.0, 2.0, 2.5, 5.0][k%4]
+    c = [1.0, 2.0, 2.5, 5.0][k % 4]
     return c * 10**(k//4)
+
 
 def _smallest_scale_larger_than(x):
     """Get the smallest scale with scale length >=x.  This corresponds to
@@ -25,10 +27,12 @@ def _smallest_scale_larger_than(x):
         k += 1
     return k
 
+
 def _ticks(a, b, spacing):
     start = math.ceil(a / spacing)
     stop = math.floor(b / spacing)
     return [k * spacing for k in range(start, stop+1)]
+
 
 def _try_single(lim):
     """Generate a selection of plausible axis tick placements.  This
@@ -48,6 +52,7 @@ def _try_single(lim):
             yield (i0*spacing, lim[1]), ticks[:-1]
         if len(ticks) > 3:
             yield (lim[0], lim[1]), ticks[1:-1]
+
 
 def _try_second(lim, length):
     assert lim[1] - lim[0] <= length
@@ -86,6 +91,7 @@ def _try_second(lim, length):
         ticks = [k * spacing for k in range(i0, i1+1)]
         yield (a, b), ticks
 
+
 def _try_pairs(x_data_lim, y_data_lim, q):
     if x_data_lim[1] - x_data_lim[0] >= (y_data_lim[1] - y_data_lim[0]) * q:
         for x_axis_lim, x_ticks in _try_single(x_data_lim):
@@ -97,6 +103,7 @@ def _try_pairs(x_data_lim, y_data_lim, q):
             length = (y_axis_lim[1] - y_axis_lim[0]) * q
             for x_axis_lim, x_ticks in _try_second(x_data_lim, length):
                 yield x_axis_lim, x_ticks, y_axis_lim, y_ticks
+
 
 def _penalties(length, data_lim, axis_lim, ticks, labels, is_parallel,
                font_ctx, min_label_sep, best_tick_dist):

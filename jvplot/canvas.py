@@ -28,9 +28,11 @@ from . import errors
 from . import param
 from . import util
 
+
 def _prepare_context(ctx):
     ctx.set_line_join(cairo.LINE_JOIN_ROUND)
     ctx.set_line_cap(cairo.LINE_CAP_ROUND)
+
 
 def _fixup_lim(lim, data=None):
     if lim is None and data is not None:
@@ -59,7 +61,8 @@ def _fixup_lim(lim, data=None):
         return (a, b)
     if a == 0:
         return (-1, 1)
-    return (min(a,0), max(a,0))
+    return (min(a, 0), max(a, 0))
+
 
 class Canvas:
     """The Canvas class."""
@@ -284,8 +287,8 @@ class Canvas:
 
         if idx is None:
             if (hasattr(self, '_last_subplot') and
-                self._last_subplot[0] == cols and
-                self._last_subplot[1] == rows):
+                    self._last_subplot[0] == cols and
+                    self._last_subplot[1] == rows):
                 idx = (self._last_subplot[2] + 1) % (cols * rows)
             else:
                 idx = 0
@@ -309,9 +312,11 @@ class Canvas:
 
         :Arguments:
 
-        horizontal_align : "start", "end", "left", "right", "center" or dimension, optional
+        horizontal_align : "start", "end", "left", "right", "center" or
+                dimension, optional
 
-        vertical_align : "baseline", "top", "bottom", "center" or dimension, optional
+        vertical_align : "baseline", "top", "bottom", "center" or dimension,
+                optional
         """
         style = self._merge_defaults(style)
         x, y = util._check_coord_pair(x, y)
@@ -332,7 +337,8 @@ class Canvas:
         p_left = util._convert_dim(padding[3], self.res, self.width)
 
         self.ctx.save()
-        self.ctx.set_font_matrix(cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
+        self.ctx.set_font_matrix(
+            cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
 
         ext = self.ctx.text_extents(text)
         if horizontal_align == "start":
@@ -454,13 +460,17 @@ class Canvas:
         else:
             margin = util._check_vec(margin, 4, True)
         if margin[0] is None:
-            margin[0] = param.get('axis_margin_top', self.res, style) / self.res
+            margin[0] = param.get('axis_margin_top',
+                                  self.res, style) / self.res
         if margin[1] is None:
-            margin[1] = param.get('axis_margin_right', self.res, style) / self.res
+            margin[1] = param.get('axis_margin_right',
+                                  self.res, style) / self.res
         if margin[2] is None:
-            margin[2] = param.get('axis_margin_bottom', self.res, style) / self.res
+            margin[2] = param.get('axis_margin_bottom',
+                                  self.res, style) / self.res
         if margin[3] is None:
-            margin[3] = param.get('axis_margin_left', self.res, style) / self.res
+            margin[3] = param.get('axis_margin_left',
+                                  self.res, style) / self.res
         if border is None:
             border = param.get('axis_lw', self.res, style) / self.res
         if padding is None:
@@ -656,7 +666,8 @@ class Canvas:
                                        weights=weights, density=density)
         if self.axes is None:
             x_lim = _fixup_lim(x_lim, bin_edges)
-            y_lim = _fixup_lim((0, None), hist)
+            # y_lim = _fixup_lim((0, None), hist)
+            y_lim = _fixup_lim(y_lim, hist)
             self.draw_axes(
                 x_lim, y_lim, width=width, height=height, margin=margin,
                 border=border, padding=padding, style=style)

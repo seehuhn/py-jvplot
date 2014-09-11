@@ -8,12 +8,14 @@ import unittest
 from . import axis
 from . import plot
 
+
 def test_scale_length():
     assert axis._scale_length(0) == 1
     nose.tools.assert_almost_equals(axis._scale_length(1), 2)
     nose.tools.assert_almost_equals(axis._scale_length(2), 2.5)
     nose.tools.assert_almost_equals(axis._scale_length(3), 5)
     nose.tools.assert_almost_equals(axis._scale_length(4), 10)
+
 
 def test_smallest_scale_larger_than():
     for x in np.linspace(0.1, 100, 1000):
@@ -22,6 +24,7 @@ def test_smallest_scale_larger_than():
         assert y > x, "%f (tick %d) > %f failed" % (y, k, x)
         z = axis._scale_length(k-1)
         assert z <= x, "%f (tick %d) <= %f failed" % (z, k-1, x)
+
 
 class AxesPenaltyTestCase(unittest.TestCase):
 
@@ -44,23 +47,23 @@ class AxesPenaltyTestCase(unittest.TestCase):
         width = h_ext[4] / self.plot.scale[0]
 
         ticks = [0, width]
-        p = axis._penalties(self.plot.width, (0,1), (0,1), ticks, labels, True,
-                            self.plot.ctx, 0.0, 1.0)
+        p = axis._penalties(self.plot.width, (0, 1), (0, 1), ticks, labels,
+                            True, self.plot.ctx, 0.0, 1.0)
         nose.tools.assert_almost_equals(p[0], 0)
 
         ticks = [0, 2*width]
-        p = axis._penalties(self.plot.width, (0,1), (0,1), ticks, labels, True,
-                            self.plot.ctx, 0.0, 1.0)
+        p = axis._penalties(self.plot.width, (0, 1), (0, 1), ticks, labels,
+                            True, self.plot.ctx, 0.0, 1.0)
         nose.tools.assert_almost_equals(p[0], 0)
 
         ticks = [0, .5*width]
-        p = axis._penalties(self.plot.width, (0,1), (0,1), ticks, labels, True,
-                            self.plot.ctx, 0.0, 1.0)
+        p = axis._penalties(self.plot.width, (0, 1), (0, 1), ticks, labels,
+                            True, self.plot.ctx, 0.0, 1.0)
         nose.tools.assert_almost_equals(p[0], 1 + .5)
 
         ticks = [0, width]
-        p = axis._penalties(self.plot.width, (0,1), (0,1), ticks, labels, True,
-                            self.plot.ctx, h_ext[4], 1.0)
+        p = axis._penalties(self.plot.width, (0, 1), (0, 1), ticks, labels,
+                            True, self.plot.ctx, h_ext[4], 1.0)
         nose.tools.assert_almost_equals(p[0], 1 + .5)
 
         # vertical axis
@@ -68,34 +71,34 @@ class AxesPenaltyTestCase(unittest.TestCase):
         height = v_ext[2] / self.plot.scale[1]
 
         ticks = [0, height]
-        p = axis._penalties(self.plot.height, (0,3), (0,3), ticks, labels, False,
-                            self.plot.ctx, 0.0, 1.0)
+        p = axis._penalties(self.plot.height, (0, 3), (0, 3), ticks, labels,
+                            False, self.plot.ctx, 0.0, 1.0)
         nose.tools.assert_almost_equals(p[0], 0)
 
         ticks = [0, 2*height]
-        p = axis._penalties(self.plot.height, (0,3), (0,3), ticks, labels, False,
-                            self.plot.ctx, 0.0, 1.0)
+        p = axis._penalties(self.plot.height, (0, 3), (0, 3), ticks, labels,
+                            False, self.plot.ctx, 0.0, 1.0)
         nose.tools.assert_almost_equals(p[0], 0)
 
         ticks = [0, .5*height]
-        p = axis._penalties(self.plot.height, (0,3), (0,3), ticks, labels, False,
-                            self.plot.ctx, 0.0, 1.0)
+        p = axis._penalties(self.plot.height, (0, 3), (0, 3), ticks, labels,
+                            False, self.plot.ctx, 0.0, 1.0)
         nose.tools.assert_almost_equals(p[0], 1 + .5)
 
         ticks = [0, height]
-        p = axis._penalties(self.plot.height, (0,3), (0,3), ticks, labels, False,
-                            self.plot.ctx, v_ext[2], 1.0)
+        p = axis._penalties(self.plot.height, (0, 3), (0, 3), ticks, labels,
+                            False, self.plot.ctx, v_ext[2], 1.0)
         nose.tools.assert_almost_equals(p[0], 1 + .5)
 
         # no labels
-        p = axis._penalties(self.plot.height, (0,3), (0,3), ticks, None, False,
-                            self.plot.ctx, v_ext[2], 1.0)
+        p = axis._penalties(self.plot.height, (0, 3), (0, 3), ticks, None,
+                            False, self.plot.ctx, v_ext[2], 1.0)
         nose.tools.assert_almost_equals(p[0], 0)
 
     def test_p1(self):
         ticks = [0, 0.2, 0.4, 0.6, 0.8, 1.0]
-        p = axis._penalties(10, (0,1), (0,1), ticks, None, True,
-                            None, 1, 2.0)
+        p = axis._penalties(10, (0, 1), (0, 1), ticks, None,
+                            True, None, 1, 2.0)
         nose.tools.assert_almost_equals(p[1], 0)
 
     # TODO(voss): implement unit tests for p2
@@ -108,9 +111,10 @@ class AxesPenaltyTestCase(unittest.TestCase):
                             None, 1, 1)
         nose.tools.assert_almost_equals(p[3], 1.0)
 
+
 def test_axes_without_aspect():
     with tempfile.TemporaryDirectory() as tmpdir:
-        limits = [ (0,1), (0,0), (1, 999), (-1, 1001) ]
+        limits = [(0, 1), (0, 0), (1, 999), (-1, 1001)]
         for x_lim in limits:
             for y_lim in limits:
                 fname = os.path.join(tmpdir, "test.pdf")
@@ -123,21 +127,25 @@ def test_axes_without_aspect():
                 assert plot_y_lim[0] <= y_lim[0] <= y_lim[1] <= plot_y_lim[1]
                 fig.close()
 
+
 def test_axes_with_aspect():
     with tempfile.TemporaryDirectory() as tmpdir:
-        limits = [ (0,1), (0,0), (1, 999), (-1, 1001) ]
+        limits = [(0, 1), (0, 0), (1, 999), (-1, 1001)]
         for x_lim in limits:
             for y_lim in limits:
-                for aspect in [ 1, .5, 2 ]:
+                for aspect in [1, .5, 2]:
                     fname = os.path.join(tmpdir, "test.pdf")
                     fig = plot.Plot(fname, 5, 5)
                     fig.draw_axes(x_lim, y_lim, aspect=1)
                     plot_x_lim = fig.axes.x_lim
                     plot_y_lim = fig.axes.y_lim
-                    print("x_lim", x_lim, plot_x_lim, "y_lim", y_lim, plot_y_lim)
-                    assert plot_x_lim[0] <= x_lim[0] <= x_lim[1] <= plot_x_lim[1]
-                    assert plot_y_lim[0] <= y_lim[0] <= y_lim[1] <= plot_y_lim[1]
+                    print("x_lim", x_lim, plot_x_lim,
+                          "y_lim", y_lim, plot_y_lim)
+                    cx = plot_x_lim[0] <= x_lim[0] <= x_lim[1] <= plot_x_lim[1]
+                    cy = plot_y_lim[0] <= y_lim[0] <= y_lim[1] <= plot_y_lim[1]
+                    assert cx and cy
+                    q = ((plot_x_lim[1] - plot_x_lim[0])
+                         / (plot_y_lim[1] - plot_y_lim[0]))
                     nose.tools.assert_almost_equals(
-                        (plot_x_lim[1] - plot_x_lim[0]) / (plot_y_lim[1] - plot_y_lim[0]),
-                        fig.axes.width / fig.axes.height)
+                        q, fig.axes.width / fig.axes.height)
                     fig.close()

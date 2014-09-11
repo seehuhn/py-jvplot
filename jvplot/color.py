@@ -972,6 +972,7 @@ names = {
     'purple': (126, 30, 156),
 }
 
+
 def get(col):
     r = -1
     if col is None:

@@ -21,6 +21,7 @@ UNITS = {
     'pt': 1 / 72.27,
 }
 
+
 def _convert_dim(dim, res, parent_length=None, allow_none=False):
     """Convert dimensions to device coordinates.
 
@@ -58,6 +59,7 @@ def _convert_dim(dim, res, parent_length=None, allow_none=False):
         pass
     return float(dim) * unit * res
 
+
 def _check_vec(v, n, broadcast=False):
     if isinstance(v, str):
         if not broadcast:
@@ -79,6 +81,7 @@ def _check_vec(v, n, broadcast=False):
         raise ValueError(tmpl % (repr(v), n, k, n))
     return v
 
+
 def _check_num_vec(v, n, broadcast=False):
     v = _check_vec(v, n, broadcast)
     try:
@@ -88,11 +91,13 @@ def _check_num_vec(v, n, broadcast=False):
             "%s used as numeric vector, but has non-numeric entries" % repr(v))
     return v
 
+
 def _check_range(r):
     r = _check_num_vec(r, 2)
     if not r[0] < r[1]:
         raise ValueError("invalid range %s" % repr(r))
     return r
+
 
 def _check_coords(x, y):
     x = np.array(x)
@@ -114,6 +119,7 @@ def _check_coords(x, y):
         tmpl = 'x and y have incompatible length: %d != %d'
         raise ValueError(tmpl % (len(x), len(y)))
     return x, y
+
 
 def _check_coord_pair(x, y):
     if y is None:

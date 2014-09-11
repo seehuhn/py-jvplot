@@ -25,6 +25,7 @@ import cairocffi as cairo
 from .canvas import Canvas, _prepare_context
 from .util import _convert_dim
 
+
 class Plot(Canvas):
 
     """The Plot Class repesents a graphics file storing a single figure.
@@ -108,7 +109,8 @@ class Plot(Canvas):
         self.close()
 
     def __str__(self):
-        return '<JvPlot %.0fbpx%.0fbp "%s">' % (self.width, self.h, self.file_name)
+        return '<JvPlot %.0fbpx%.0fbp "%s">' % (self.width, self.h,
+                                                self.file_name)
 
     def close(self):
         """Close the plot and write all outstanding changes to the underlying

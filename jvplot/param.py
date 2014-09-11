@@ -57,6 +57,7 @@ parameters = {
     'title_top_margin': ('dim', '2mm', 'distance of title to top edge of canvas'),
 }
 
+
 def get(name, res, style={}, parent_width=None, parent_height=None):
     while True:
         info = parameters.get(name)

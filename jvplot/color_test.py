@@ -2,6 +2,7 @@ import nose.tools
 
 from . import color
 
+
 def test_color():
     r, g, b, a = color.get('#000000')
     assert r == g == b == 0.0

@@ -6,6 +6,7 @@ class JvPlotError(Exception):
     def __str__(self):
         return self.msg
 
+
 class UsageError(JvPlotError):
 
     pass
