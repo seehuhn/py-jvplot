@@ -319,16 +319,16 @@ class Canvas:
                 optional
         """
         style = self._merge_defaults(style)
+        font_size = param.get('text_font_size', self.res, style)
+        col = param.get('text_col', self.res, style)
+        bg = param.get('text_bg', self.res, style)
+
         x, y = util._check_coord_pair(x, y)
         x = self.offset[0] + self.scale[0] * x
         y = self.offset[1] + self.scale[1] * y
 
         if rotate_deg is not None:
             rotate = float(rotate_deg) / 180 * np.pi
-
-        font_size = param.get('text_font_size', self.res, style)
-        col = param.get('text_col', self.res, style)
-        bg = param.get('text_bg', self.res, style)
 
         padding = util._check_vec(padding, 4, True)
         p_top = util._convert_dim(padding[0], self.res, self.height)
@@ -417,7 +417,7 @@ class Canvas:
                     best_ylim = lim
                     best_ysteps = steps
                     best_ylabels = labels
-        else:                   # aspect ratio is set
+        else: # aspect ratio is set
             best_p = np.inf
             q = aspect * self.width / self.height
             for data in axis._try_pairs(x_lim, y_lim, q):
@@ -454,7 +454,8 @@ class Canvas:
 
         """
         style = self._merge_defaults(style)
-
+        x_label_dist = param.get('axis_x_label_dist', self.res, style)
+        y_label_dist = param.get('axis_y_label_dist', self.res, style)
         if margin is None:
             margin = [None, None, None, None]
         else:
@@ -477,10 +478,10 @@ class Canvas:
             padding = "2mm"
         axes, rect = self._viewport(width, height, margin, border, padding,
                                     style)
-
         tick_width = param.get('axis_tick_width', self.res, axes.style)
         tick_length = param.get('axis_tick_length', self.res, axes.style)
         font_size = param.get('axis_font_size', self.res, axes.style)
+
         self.ctx.save()
         self.ctx.set_line_cap(cairo.LINE_CAP_BUTT)
         self.ctx.set_font_matrix(
@@ -494,7 +495,6 @@ class Canvas:
         axes.set_limits(x_lim, y_lim)
 
         ascent, descent, _, _, _ = self.ctx.font_extents()
-        x_label_dist = param.get('axis_x_label_dist', self.res, style)
         for x_pos, x_lab in x_labels:
             x_pos = axes.offset[0] + x_pos * axes.scale[0]
             ext = self.ctx.text_extents(x_lab)
@@ -503,7 +503,6 @@ class Canvas:
             self.ctx.move_to(x_pos - .5*ext[4],
                              rect[1] - .5*tick_length - x_label_dist - ascent)
             self.ctx.show_text(x_lab)
-        y_label_dist = param.get('axis_y_label_dist', self.res, style)
         for y_pos, y_lab in y_labels:
             y_pos = axes.offset[1] + y_pos * axes.scale[1]
             ext = self.ctx.text_extents(y_lab)
@@ -548,15 +547,15 @@ class Canvas:
         ignored and the line is interupted where such vertices occur.
 
         """
+        style = self._merge_defaults(style)
+        lw = param.get('plot_lw', self.res, style)
+        col = param.get('plot_col', self.res, style)
 
         x, y = util._check_coords(x, y)
         x = self.offset[0] + self.scale[0] * x
         y = self.offset[1] + self.scale[1] * y
-        style = self._merge_defaults(style)
 
         self.ctx.save()
-        lw = param.get('plot_lw', self.res, style)
-        col = param.get('plot_col', self.res, style)
         self.ctx.set_line_width(lw)
         self.ctx.set_source_rgba(*col)
         nan = np.logical_or(np.isnan(x), np.isnan(y)).nonzero()[0]
@@ -580,8 +579,8 @@ class Canvas:
              width=None, height=None, margin=None, border=None, padding=None,
              style={}):
         """Draw a line plot."""
-        x, y = util._check_coords(x, y)
         if self.axes is None:
+            x, y = util._check_coords(x, y)
             x_lim = _fixup_lim(x_lim, x)
             y_lim = _fixup_lim(y_lim, y)
             self.draw_axes(
@@ -593,15 +592,15 @@ class Canvas:
 
     def draw_points(self, x, y=None, *, style={}):
         style = self._merge_defaults(style)
+        lw = param.get('plot_point_size', self.res, style)
+        col = param.get('plot_point_col', self.res, style)
+        separate = param.get('plot_point_separate', self.res, style)
 
         x, y = util._check_coords(x, y)
         x = self.offset[0] + self.scale[0] * x
         y = self.offset[1] + self.scale[1] * y
 
         self.ctx.save()
-        lw = param.get('plot_point_size', self.res, style)
-        col = param.get('plot_point_col', self.res, style)
-        separate = param.get('plot_point_separate', self.res, style)
         self.ctx.set_line_width(lw)
         self.ctx.set_source_rgba(*col)
         if separate:
@@ -620,8 +619,8 @@ class Canvas:
                      width=None, height=None, margin=None, border=None,
                      padding=None, style={}):
         """Draw a scatter plot."""
-        x, y = util._check_coords(x, y)
         if self.axes is None:
+            x, y = util._check_coords(x, y)
             x_lim = _fixup_lim(x_lim, x)
             y_lim = _fixup_lim(y_lim, y)
             self.draw_axes(
@@ -632,12 +631,13 @@ class Canvas:
         return self.axes
 
     def draw_histogram(self, hist, bin_edges, *, style={}):
-        x = self.offset[0] + self.scale[0] * bin_edges
-        y = self.offset[1] + self.scale[1] * hist
         style = self._merge_defaults(style)
         lc = param.get('hist_col', self.res, style)
         lw = param.get('hist_lw', self.res, style)
         fc = param.get('hist_fill_col', self.res, style)
+
+        x = self.offset[0] + self.scale[0] * bin_edges
+        y = self.offset[1] + self.scale[1] * hist
 
         self.ctx.save()
         for i, yi in enumerate(y):
