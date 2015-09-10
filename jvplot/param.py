@@ -14,7 +14,7 @@
 from . import color
 from .util import _convert_dim
 
-# name: (type, default, inherits from, description)
+# name: (type, default, description)
 parameters = {
     'affine_line_col': ('col', '$line_col', 'default line color for straight lines'),
     'affine_lw': ('dim', '$lw', 'default line width for straight lines'),

@@ -1,4 +1,4 @@
-# plot.py - implementation of the JvPlot class
+# plot.py - implementation of the Plot class
 # Copyright (C) 2014 Jochen Voss <voss@seehuhn.de>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -12,10 +12,10 @@
 # GNU General Public License for more details.
 
 """
-Implementation of the JvPlot Class
-----------------------------------
+The Plot Class
+--------------
 
-This module implements the main entry point for the JvPlot package.
+This module provides the main entry point for the JvPlot package.
 """
 
 import os.path
@@ -28,41 +28,41 @@ from .util import _convert_dim
 
 class Plot(Canvas):
 
-    """The Plot Class repesents a graphics file storing a single figure.
+    """The Plot Class repesents a file containing a single figure.
 
-    Arguments:
+    Args:
+        fname (string):
+            The name of the file the figure wil be stored in.  Any
+            previously existing file with this name will be overwritten.
+            The file name extension determines the file type.  Currently
+            available file types are `.pdf`, `.ps`, `.eps` and `.png`.
 
-    fname (string)
-        The name of the file the figure wil be stored in.  Any
-        previously existing file with this name will be overwritten.
-        The file name extension determines the file type.  Currently
-        available file types are `.pdf`, `.ps`, `.eps` and `.png`.
+        width:
+            The figure width.  This can either be a number to give the
+            width in inches, or a string including a length unit like "10cm".
 
-    width
-        The figure width.  This can either be a number to give the
-        width in inches, or a string including a length unit like "10cm".
+        height:
+            The figure height.  This can either be a number to give the
+            height in inches, or a string including a length unit like "10cm".
 
-    height
-        The figure height.  This can either be a number to give the
-        height in inches, or a string including a length unit like "10cm".
+        res (number, optional):
+            For raster image formats, `res` specifies the device resolution
+            in pixels per inch.
 
-    res (number, optional)
-        For raster image formats, `res` specifies the device resolution
-        in pixels per inch.
-
-    style (dict, optional)
-        Dictionary with default plot parameter values for the figure.
+        style (dict, optional):
+            Dictionary with default plot parameter values for the figure.
     """
 
-    def __init__(self, fname, width, height, *, res=100, style={}):
+    def __init__(self, file_name, width, height, *, res=100, style={}):
         """Create a new plot."""
 
-        self.file_name = fname
-        """The output file name, as given in the plot.Plot constructor."""
+        self.file_name = file_name
+        """The output file name, as given in the ``file_name`` argument of the
+        plot.Plot constructor."""
 
-        _, ext = os.path.splitext(fname)
+        _, ext = os.path.splitext(file_name)
         if ext == '':
-            raise ValueError('file name "%s" lacks an extension' % fname)
+            raise ValueError('file name "%s" lacks an extension' % file_name)
         else:
             ext = ext[1:]
 
@@ -71,11 +71,11 @@ class Plot(Canvas):
         w = _convert_dim(width, res)
         h = _convert_dim(height, res)
         if ext == 'pdf':
-            surface = cairo.PDFSurface(fname, w, h)
+            surface = cairo.PDFSurface(file_name, w, h)
         elif ext == 'ps':
-            surface = cairo.PSSurface(fname, w, h)
+            surface = cairo.PSSurface(file_name, w, h)
         elif ext == 'eps':
-            surface = cairo.PSSurface(fname, w, h)
+            surface = cairo.PSSurface(file_name, w, h)
             surface.set_eps(True)
         elif ext == 'png':
             w = int(w + 0.5)
@@ -99,7 +99,7 @@ class Plot(Canvas):
 
         super().__init__(ctx, 0, 0, w, h, res=res, style=style)
         self.surface = surface
-        self.file_name = fname
+        self.file_name = file_name
         self.file_type = ext
 
     def __enter__(self):
@@ -113,8 +113,7 @@ class Plot(Canvas):
                                                 self.file_name)
 
     def close(self):
-        """Close the plot and write all outstanding changes to the underlying
-        file.
+        """Close the plot and write all outstanding changes to the file.
 
         """
         if self.file_type == 'png':

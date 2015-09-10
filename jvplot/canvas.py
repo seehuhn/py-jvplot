@@ -151,14 +151,11 @@ class Canvas:
         method must be called before any data can be plotted on the
         canvas.
 
-        :Arguments:
-
-        x_lim : tuple of length 2
-            A pair of numbers, giving the minimal/maximal x-coordinate
-            of the data.
-        y_lim : tuple of length 2
-            A pair of numbers, giving the minimal/maximal y-coordinate
-            of the data.
+        Args:
+            x_lim (tuple of length 2): A pair of numbers, giving the
+                minimal/maximal x-coordinate of the data.
+            y_lim (tuple of length 2): A pair of numbers, giving the
+                minimal/maximal y-coordinate of the data.
 
         """
         x_lim = util._check_range(x_lim)
@@ -277,9 +274,10 @@ class Canvas:
         return res
 
     def subplot(self, cols, rows, idx=None, *, padding=0, style={}):
-        """Split the current canvas into a `cols`-times-`rows` grid and return
-        the sub-canvas corresponding to column `idx % cols` and row
-        `idx // cols` (where both row and column counts start with 0).
+        """Split the current canvas into a ``cols``-times-``rows`` grid and
+        return the sub-canvas corresponding to column ``idx % cols``
+        and row ``idx // cols`` (where both row and column counts
+        start with 0).
 
         """
         if rows <= 0 or cols <= 0:
@@ -310,13 +308,21 @@ class Canvas:
                   padding=["1pt", "3pt"], style={}):
         """Add text to a canvas.
 
-        :Arguments:
+        Args:
+            text (str): The text to add to the canvas.
+            x:
+            y:
+            horizontal_align ("start", "end", "left", "right", "center" or dimension):
+                Specifies which part of the text to horizontally align
+                at the given `x` coordinate.
+            vertical_align ("baseline", "top", "bottom", "center" or dimension):
+                Specifies which part of the text to vertically align
+                at the given `y` coordinate.
+            rotate:
+            rotate_deg:
+            padding:
+            style:
 
-        horizontal_align : "start", "end", "left", "right", "center" or
-                dimension, optional
-
-        vertical_align : "baseline", "top", "bottom", "center" or dimension,
-                optional
         """
         style = self._merge_defaults(style)
         font_size = param.get('text_font_size', self.res, style)
@@ -452,6 +458,17 @@ class Canvas:
         """Draw a set of coordinate axes and return a new canvas representing
         the data area inside the axes.
 
+        Args:
+            x_lim (tuple): the horizontal coordinate range to include.
+            y_lim (tuple): the vertical coordinate range to include.
+            aspect (Optional[number]): The aspect ratio of the axes area;
+                1 makes circles shown as circles, values >=1
+                turn circles into ellipses wider than high, and values
+                <=1 turn circles into ellipses higher than wide.
+            width (Optional[dimension]): the width of the axes area.
+            height (Optional[dimension]): the height of the axes area.
+            margin (Optional[dimension]): the width of the outer margin
+                around the axes area.
         """
         style = self._merge_defaults(style)
         x_label_dist = param.get('axis_x_label_dist', self.res, style)
