@@ -69,12 +69,12 @@ def _check_vec(v, n, broadcast=False):
         k = len(v)
     except TypeError:
         if not broadcast:
-            tmpl = "%s used as vec%d, but does not have length %d"
-            raise TypeError(tmpl % (repr(v), n, n))
+            tmpl = "%s used as vec%d, but does not have a length"
+            raise TypeError(tmpl % (repr(v), n))
         k = 1
         v = [v]
 
-    if 1 <= k < n and n % k == 0:
+    if broadcast and 1 <= k < n and n % k == 0:
         return list(v) * (n // k)
     elif k != n:
         tmpl = "%s used as vec%d, but has length %s != %d"

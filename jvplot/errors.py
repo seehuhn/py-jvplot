@@ -7,6 +7,6 @@ class JvPlotError(Exception):
         return self.msg
 
 
-class UsageError(JvPlotError):
+class WrongUsage(JvPlotError):
 
     pass

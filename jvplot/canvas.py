@@ -113,7 +113,7 @@ class Canvas:
         """Add extra padding around the edge of the canvas."""
         if self.axes is not None:
             msg = "cannot add padding once axes are present"
-            raise errors.UsageError(msg)
+            raise errors.WrongUsage(msg)
 
         padding = util._check_vec(padding, 4, True)
         p_top = util._convert_dim(padding[0], self.res, self.height)
@@ -127,7 +127,7 @@ class Canvas:
 
     def add_title(self, text, *, style={}):
         if self.axes is not None:
-            raise errors.UsageError("cannot add title once axes are present")
+            raise errors.WrongUsage("cannot add title once axes are present")
 
         style = self._merge_defaults(style)
         font_size = param.get('title_font_size', self.res, style)
@@ -518,7 +518,7 @@ class Canvas:
             self.ctx.move_to(x_pos, rect[1] - tick_length)
             self.ctx.line_to(x_pos, rect[1] + tick_length)
             self.ctx.move_to(x_pos - .5*ext[4],
-                             rect[1] - .5*tick_length - x_label_dist - ascent)
+                             rect[1] - tick_length - x_label_dist - ascent)
             self.ctx.show_text(x_lab)
         for y_pos, y_lab in y_labels:
             y_pos = axes.offset[1] + y_pos * axes.scale[1]
