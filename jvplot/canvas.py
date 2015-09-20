@@ -24,6 +24,7 @@ import numpy as np
 import cairocffi as cairo
 
 from . import axis
+from . import color
 from . import errors
 from . import param
 from . import util
@@ -67,17 +68,23 @@ def _fixup_lim(lim, data=None):
 class Canvas:
     """The Canvas class."""
 
-    def __init__(self, ctx, x, y, w, h, *, res, style={}):
+    def __init__(self, ctx, x, y, w, h, *, res, parent, style={}):
         """Allocate a new canvas."""
+        style = self._check_style(style)
+
         self.ctx = ctx
 
         self.x = x
-        """Horizontal position of this canvas on the canvas, in device
-        coordinate units (read only)."""
+        """Horizontal position of this canvas on the parent canvas, in device
+        coordinate units (read only).
+
+        """
 
         self.y = y
-        """Vertical position of this canvas on the canvas, in device
-        coordinate units (read only)."""
+        """Vertical position of this canvas on the parent canvas, in device
+        coordinate units (read only).
+
+        """
 
         self.width = w
         "Width of the canvas in device coordinate units (read only)."
@@ -94,7 +101,8 @@ class Canvas:
         """Resolution of the canvas, *i.e.* the number of device coordinate
         units per inch (read only)."""
 
-        self.style = dict(style)
+        self.parent = parent
+        self.style = style
 
         self.offset = None
         self.scale = None
@@ -104,13 +112,72 @@ class Canvas:
         tmpl = "<Canvas %.0fx%.0f%+.0f%+.0f>"
         return tmpl % (self.width, self.height, self.x, self.y)
 
-    def _merge_defaults(self, style):
-        res = dict(self.style)
-        res.update(style)
-        return res
+    @staticmethod
+    def _check_style(style):
+        style = dict(style)
+        invalid = style.keys() - param.valid_keys
+        for name in invalid:
+            msg = "invalid parameter '%s' set in style" % name
+            raise errors.InvalidParameterName(msg)
+        return style
+
+    def get_param(self, name, style={}):
+        """Get the value of graphics parameter ``name``.  If the optinal
+        argument ``style`` is given, it must be a dictionary mapping
+        parameter names to values; in this case, values in ``style``
+        override values set in the Canvas object.
+
+        """
+        style = self._check_style(style)
+        info = param.default.get(name)
+        if info is None:
+            msg = "unknown parameter '%s'" % name
+            raise errors.InvalidParameterName(msg)
+
+        def styles():
+            if style:
+                yield style
+            elem = self
+            while elem:
+                yield elem.style
+                elem = elem.parent
+        def get(x):
+            for s in styles():
+                if x in s:
+                    return s[x]
+            else:
+                return info[1]
+
+        names = [name]
+        while True:
+            value = get(name)
+            if isinstance(value, str) and value.startswith('$'):
+                name = value[1:]
+                if name in names:
+                    msg = ' -> '.join(names + [name])
+                    raise errors.WrongUsage("infinite parameter loop: " + msg)
+                names.append(name)
+                info = param.default.get(name)
+            else:
+                break
+        if info[0] == 'width':
+            return util._convert_dim(value, self.res, self.width)
+        elif info[0] == 'height':
+            return util._convert_dim(value, self.res, self.height)
+        elif info[0] == 'dim':
+            return util._convert_dim(value, self.res)
+        elif info[0] == 'col':
+            return color.get(value)
+        elif info[0] == 'bool':
+            return bool(value)
+        else:
+            raise NotImplementedError("parameter type '%s'" % info[0])
 
     def add_padding(self, padding):
-        """Add extra padding around the edge of the canvas."""
+        """Add extra padding around the inside edge of the canvas.  This
+        function reduces the size of the canvas.
+
+        """
         if self.axes is not None:
             msg = "cannot add padding once axes are present"
             raise errors.WrongUsage(msg)
@@ -126,18 +193,33 @@ class Canvas:
         self.height -= p_bottom + p_top
 
     def add_title(self, text, *, style={}):
+        """Add a title showing the string ``text`` along the top edge of the
+        canvas.  This function reduces the height of the canvas.
+
+        This function uses the following graphics parameters:
+
+            - title_font_size: the font size to use to typeset the
+              title.
+
+            - title_top_margin: the size of the margin to add between
+              the bottom of the title text and the top of the
+              remaining canvas.
+
+        """
         if self.axes is not None:
             raise errors.WrongUsage("cannot add title once axes are present")
-
-        style = self._merge_defaults(style)
-        font_size = param.get('title_font_size', self.res, style)
-        margin = param.get('title_top_margin', self.res, style)
+        style = self._check_style(style)
+        font_size = self.get_param('title_font_size', style)
+        margin = self.get_param('title_top_margin', style)
 
         self.ctx.save()
         self.ctx.set_font_matrix(
             cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
         ascent, descent, _, _, _ = self.ctx.font_extents()
         self.height -= ascent + descent + margin
+        if self.height < 0:
+            msg = "plot is not high enough to add a title"
+            raise errors.WrongUsage(msg)
 
         ext = self.ctx.text_extents(text)
         x_offs = max((self.width - ext[2]) / 2, 0)
@@ -258,8 +340,7 @@ class Canvas:
         ctx.rectangle(x, y, w, h)
         ctx.clip()
 
-        res = Canvas(ctx, x, y, w, h,
-                     res=self.res, style=self._merge_defaults(style))
+        res = Canvas(ctx, x, y, w, h, res=self.res, parent=self, style=style)
         res.add_padding([p_top / self.res, p_right / self.res,
                          p_bottom / self.res, p_left / self.res])
         return res, border_rect
@@ -270,6 +351,7 @@ class Canvas:
         current canvas.
 
         """
+        style = self._check_style(style)
         res, _ = self._viewport(width, height, margin, border, padding, style)
         return res
 
@@ -282,6 +364,7 @@ class Canvas:
         """
         if rows <= 0 or cols <= 0:
             return ValueError('invalid %d by %d arrangement' % (cols, rows))
+        style = self._check_style(style)
 
         if idx is None:
             if (hasattr(self, '_last_subplot') and
@@ -324,10 +407,10 @@ class Canvas:
             style:
 
         """
-        style = self._merge_defaults(style)
-        font_size = param.get('text_font_size', self.res, style)
-        col = param.get('text_col', self.res, style)
-        bg = param.get('text_bg', self.res, style)
+        style = self._check_style(style)
+        font_size = self.get_param('text_font_size', style)
+        col = self.get_param('text_col', style)
+        bg = self.get_param('text_bg', style)
 
         x, y = util._check_coord_pair(x, y)
         x = self.offset[0] + self.scale[0] * x
@@ -393,8 +476,8 @@ class Canvas:
         self.ctx.restore()
 
     def _layout_labels(self, x_lim, y_lim, aspect, font_ctx):
-        opt_spacing = param.get('axis_tick_opt_spacing', self.res, self.style)
-        x_label_sep = param.get('axis_x_label_sep', self.res, self.style)
+        opt_spacing = self.get_param('axis_tick_opt_spacing')
+        x_label_sep = self.get_param('axis_x_label_sep')
         if aspect is None:
             # horizontal axis
             best_p = np.inf
@@ -470,34 +553,31 @@ class Canvas:
             margin (Optional[dimension]): the width of the outer margin
                 around the axes area.
         """
-        style = self._merge_defaults(style)
-        x_label_dist = param.get('axis_x_label_dist', self.res, style)
-        y_label_dist = param.get('axis_y_label_dist', self.res, style)
+        style = self._check_style(style)
+        x_label_dist = self.get_param('axis_x_label_dist', style)
+        y_label_dist = self.get_param('axis_y_label_dist', style)
         if margin is None:
             margin = [None, None, None, None]
         else:
             margin = util._check_vec(margin, 4, True)
         if margin[0] is None:
-            margin[0] = param.get('axis_margin_top',
-                                  self.res, style) / self.res
+            margin[0] = self.get_param('axis_margin_top', style) / self.res
         if margin[1] is None:
-            margin[1] = param.get('axis_margin_right',
-                                  self.res, style) / self.res
+            margin[1] = self.get_param('axis_margin_right', style) / self.res
         if margin[2] is None:
-            margin[2] = param.get('axis_margin_bottom',
-                                  self.res, style) / self.res
+            margin[2] = self.get_param('axis_margin_bottom', style) / self.res
         if margin[3] is None:
-            margin[3] = param.get('axis_margin_left',
-                                  self.res, style) / self.res
+            margin[3] = self.get_param('axis_margin_left', style) / self.res
         if border is None:
-            border = param.get('axis_lw', self.res, style) / self.res
+            border = self.get_param('axis_lw', style) / self.res
         if padding is None:
             padding = "2mm"
+
         axes, rect = self._viewport(width, height, margin, border, padding,
                                     style)
-        tick_width = param.get('axis_tick_width', self.res, axes.style)
-        tick_length = param.get('axis_tick_length', self.res, axes.style)
-        font_size = param.get('axis_font_size', self.res, axes.style)
+        tick_width = axes.get_param('axis_tick_width')
+        tick_length = axes.get_param('axis_tick_length')
+        font_size = axes.get_param('axis_font_size')
 
         self.ctx.save()
         self.ctx.set_line_cap(cairo.LINE_CAP_BUTT)
@@ -564,9 +644,9 @@ class Canvas:
         ignored and the line is interupted where such vertices occur.
 
         """
-        style = self._merge_defaults(style)
-        lw = param.get('plot_lw', self.res, style)
-        col = param.get('plot_col', self.res, style)
+        style = self._check_style(style)
+        lw = self.get_param('plot_lw', style)
+        col = self.get_param('plot_col', style)
 
         x, y = util._check_coords(x, y)
         x = self.offset[0] + self.scale[0] * x
@@ -608,10 +688,10 @@ class Canvas:
         return self.axes
 
     def draw_points(self, x, y=None, *, style={}):
-        style = self._merge_defaults(style)
-        lw = param.get('plot_point_size', self.res, style)
-        col = param.get('plot_point_col', self.res, style)
-        separate = param.get('plot_point_separate', self.res, style)
+        style = self._check_style(style)
+        lw = self.get_param('plot_point_size', style)
+        col = self.get_param('plot_point_col', style)
+        separate = self.get_param('plot_point_separate', style)
 
         x, y = util._check_coords(x, y)
         x = self.offset[0] + self.scale[0] * x
@@ -648,10 +728,10 @@ class Canvas:
         return self.axes
 
     def draw_histogram(self, hist, bin_edges, *, style={}):
-        style = self._merge_defaults(style)
-        lc = param.get('hist_col', self.res, style)
-        lw = param.get('hist_lw', self.res, style)
-        fc = param.get('hist_fill_col', self.res, style)
+        style = self._check_style(style)
+        lc = self.get_param('hist_col', style)
+        lw = self.get_param('hist_lw', style)
+        fc = self.get_param('hist_fill_col', style)
 
         x = self.offset[0] + self.scale[0] * bin_edges
         y = self.offset[1] + self.scale[1] * hist
@@ -683,7 +763,6 @@ class Canvas:
                                        weights=weights, density=density)
         if self.axes is None:
             x_lim = _fixup_lim(x_lim, bin_edges)
-            # y_lim = _fixup_lim((0, None), hist)
             y_lim = _fixup_lim(y_lim, hist)
             self.draw_axes(
                 x_lim, y_lim, width=width, height=height, margin=margin,
@@ -712,9 +791,9 @@ class Canvas:
             Parameters setting the line thickness and color.
         """
 
-        style = self._merge_defaults(style)
-        lw = param.get('affine_lw', self.res, style)
-        col = param.get('affine_line_col', self.res, style)
+        style = self._check_style(style)
+        lw = self.get_param('affine_lw', style)
+        col = self.get_param('affine_line_col', style)
 
         if x is not None:
             x = float(x)

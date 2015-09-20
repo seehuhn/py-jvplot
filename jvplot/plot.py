@@ -97,7 +97,7 @@ class Plot(Canvas):
             ctx.fill()
             ctx.restore()
 
-        super().__init__(ctx, 0, 0, w, h, res=res, style=style)
+        super().__init__(ctx, 0, 0, w, h, res=res, parent=None, style=style)
         self.surface = surface
         self.file_name = file_name
         self.file_type = ext

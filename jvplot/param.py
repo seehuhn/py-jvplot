@@ -1,4 +1,4 @@
-# param.py - configurable parameters for the jvplot package
+# param.py - default parameters for the jvplot package
 # Copyright (C) 2014 Jochen Voss <voss@seehuhn.de>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -15,7 +15,7 @@ from . import color
 from .util import _convert_dim
 
 # name: (type, default, description)
-parameters = {
+default = {
     'affine_line_col': ('col', '$line_col', 'default line color for straight lines'),
     'affine_lw': ('dim', '$lw', 'default line width for straight lines'),
     'axis_font_size': ('dim', '$font_size', 'font size for axis labels'),
@@ -57,29 +57,4 @@ parameters = {
     'title_top_margin': ('dim', '2mm', 'distance of title to top edge of canvas'),
 }
 
-
-def get(name, res, style={}, parent_width=None, parent_height=None):
-    while True:
-        info = parameters.get(name)
-        if info is None:
-            raise ValueError('unknown parameter "%s"' % name)
-        if name in style:
-            value = style[name]
-        else:
-            value = info[1]
-        if isinstance(value, str) and value.startswith('$'):
-            name = value[1:]
-        else:
-            break
-    if info[0] == 'width':
-        return _convert_dim(value, res, parent_width)
-    elif info[0] == 'height':
-        return _convert_dim(value, res, parent_height)
-    elif info[0] == 'dim':
-        return _convert_dim(value, res)
-    elif info[0] == 'col':
-        return color.get(value)
-    elif info[0] == 'bool':
-        return bool(value)
-    else:
-        raise NotImplementedError("parameter type '%s'" % info[0])
+valid_keys = set(default.keys())
