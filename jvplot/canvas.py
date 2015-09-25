@@ -122,8 +122,8 @@ class Canvas:
         return style
 
     def get_param(self, name, style={}):
-        """Get the value of graphics parameter ``name``.  If the optinal
-        argument ``style`` is given, it must be a dictionary mapping
+        """Get the value of graphics parameter ``name``.  If the optional
+        argument ``style`` is given, it must be a dictionary, mapping
         parameter names to values; in this case, values in ``style``
         override values set in the Canvas object.
 
