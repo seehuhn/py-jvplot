@@ -127,6 +127,11 @@ class Canvas:
         parameter names to values; in this case, values in ``style``
         override values set in the Canvas object.
 
+        Args:
+            name (string): the graphics parameter name to query.
+            style (dict): graphics parameter values to override the
+                canvas settings.
+
         """
         style = self._check_style(style)
         info = param.default.get(name)
@@ -177,6 +182,10 @@ class Canvas:
         """Add extra padding around the inside edge of the canvas.  This
         function reduces the size of the canvas.
 
+        Args:
+            padding (string or tuple of length 4): the amount of
+                margin to add at the top, right, bottom and left edge.
+
         """
         if self.axes is not None:
             msg = "cannot add padding once axes are present"
@@ -195,6 +204,11 @@ class Canvas:
     def add_title(self, text, *, style={}):
         """Add a title showing the string ``text`` along the top edge of the
         canvas.  This function reduces the height of the canvas.
+
+        Args:
+            text (string): The title text to add.
+            style (dict): graphics parameter values to override the
+                canvas settings.
 
         This function uses the following graphics parameters:
 
@@ -257,6 +271,18 @@ class Canvas:
         return x_lim, y_lim
 
     def _viewport(self, width, height, margin, border, padding, style):
+        """Args:
+            width (dim): The width of the viewport.
+            height (dim): The height of the viewport.
+            margin (string or tuple of length 4): margins, determining
+                the position of the viewport on the canvas.
+            border (dim): Line width of the border box.
+            padding (string or tuple of length 4): Amount of padding
+                inside the edge of the new viewport.
+            style (dict): graphics parameter values to override the
+                canvas settings.
+
+        """
         width = util._convert_dim(width, self.res, self.width,
                                   allow_none=True)
         height = util._convert_dim(height, self.res, self.height,
@@ -350,6 +376,17 @@ class Canvas:
         """Get a new canvas representing a rectangular sub-region of the
         current canvas.
 
+        Args:
+            width (dim): The width of the viewport.
+            height (dim): The height of the viewport.
+            margin (string or tuple of length 4): margins, determining
+                the position of the viewport on the canvas.
+            border (dim): Line width of the border box.
+            padding (string or tuple of length 4): Amount of padding
+                inside the edge of the new viewport.
+            style (dict): graphics parameter values to override the
+                canvas settings.
+
         """
         style = self._check_style(style)
         res, _ = self._viewport(width, height, margin, border, padding, style)
@@ -360,6 +397,15 @@ class Canvas:
         return the sub-canvas corresponding to column ``idx % cols``
         and row ``idx // cols`` (where both row and column counts
         start with 0).
+
+        Args:
+            cols (int): Number of columns.
+            rows (int): Number of rows.
+            idx (int): The position of the returned viewport in the grid.
+            padding (string or tuple of length 4): Amount of padding
+                inside the edge of the new viewport.
+            style (dict): graphics parameter values to override the
+                canvas settings.
 
         """
         if rows <= 0 or cols <= 0:
@@ -393,8 +439,8 @@ class Canvas:
 
         Args:
             text (str): The text to add to the canvas.
-            x:
-            y:
+            x: Horizontal position of the text in data coordinates.
+            y: Vertical position of the text in data coordinates.
             horizontal_align ("start", "end", "left", "right", "center" or dimension):
                 Specifies which part of the text to horizontally align
                 at the given `x` coordinate.
@@ -476,6 +522,14 @@ class Canvas:
         self.ctx.restore()
 
     def _layout_labels(self, x_lim, y_lim, aspect, font_ctx):
+        """
+        Args:
+            x_lim ():
+            y_lim ():
+            aspect ():
+            font_ctx ():
+
+        """
         opt_spacing = self.get_param('axis_tick_opt_spacing')
         x_label_sep = self.get_param('axis_x_label_sep')
         if aspect is None:
@@ -552,6 +606,10 @@ class Canvas:
             height (Optional[dimension]): the height of the axes area.
             margin (Optional[dimension]): the width of the outer margin
                 around the axes area.
+            border ():
+            padding ():
+            style ():
+
         """
         style = self._check_style(style)
         x_label_dist = self.get_param('axis_x_label_dist', style)
@@ -643,6 +701,11 @@ class Canvas:
         Vertices where at least one of the coordinates is ``nan`` are
         ignored and the line is interupted where such vertices occur.
 
+        Args:
+            x ():
+            y ():
+            style ():
+
         """
         style = self._check_style(style)
         lw = self.get_param('plot_lw', style)
@@ -675,7 +738,22 @@ class Canvas:
     def plot(self, x, y=None, *, aspect=None, x_lim=None, y_lim=None,
              width=None, height=None, margin=None, border=None, padding=None,
              style={}):
-        """Draw a line plot."""
+        """Draw a line plot.
+
+        Args:
+            x ():
+            y ():
+            aspect ():
+            x_lim ():
+            y_lim ():
+            width ():
+            height ():
+            margin ():
+            border ():
+            padding ():
+            style ():
+
+        """
         if self.axes is None:
             x, y = util._check_coords(x, y)
             x_lim = _fixup_lim(x_lim, x)
@@ -688,6 +766,13 @@ class Canvas:
         return self.axes
 
     def draw_points(self, x, y=None, *, style={}):
+        """
+        Args:
+            x ():
+            y ():
+            style ():
+
+        """
         style = self._check_style(style)
         lw = self.get_param('plot_point_size', style)
         col = self.get_param('plot_point_col', style)
@@ -715,7 +800,22 @@ class Canvas:
     def scatter_plot(self, x, y=None, *, aspect=None, x_lim=None, y_lim=None,
                      width=None, height=None, margin=None, border=None,
                      padding=None, style={}):
-        """Draw a scatter plot."""
+        """Draw a scatter plot.
+
+        Args:
+            x ():
+            y ():
+            aspect ():
+            x_lim ():
+            y_lim ():
+            width ():
+            height ():
+            margin ():
+            border ():
+            padding ():
+            style ():
+
+        """
         if self.axes is None:
             x, y = util._check_coords(x, y)
             x_lim = _fixup_lim(x_lim, x)
@@ -728,6 +828,13 @@ class Canvas:
         return self.axes
 
     def draw_histogram(self, hist, bin_edges, *, style={}):
+        """
+        Args:
+            hist ():
+            bin_edges ():
+            style ():
+
+        """
         style = self._check_style(style)
         lc = self.get_param('hist_col', style)
         lw = self.get_param('hist_lw', style)
@@ -758,7 +865,24 @@ class Canvas:
                   density=False, x_lim=None, y_lim=None, width=None,
                   height=None, margin=None, border=None, padding=None,
                   style={}):
-        """Draw a histogram."""
+        """Draw a histogram.
+
+        Args:
+            x ():
+            bins ():
+            range ():
+            weights ():
+            density ():
+            x_lim ():
+            y_lim ():
+            width ():
+            height ():
+            margin ():
+            border ():
+            padding ():
+            style ():
+
+        """
         hist, bin_edges = np.histogram(x, bins=bins, range=range,
                                        weights=weights, density=density)
         if self.axes is None:
@@ -789,6 +913,14 @@ class Canvas:
 
         style (dict):
             Parameters setting the line thickness and color.
+
+        Args:
+            x ():
+            y ():
+            a ():
+            b ():
+            style ():
+
         """
 
         style = self._check_style(style)
