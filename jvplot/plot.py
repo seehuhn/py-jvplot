@@ -31,26 +31,26 @@ class Plot(Canvas):
     """The Plot Class repesents a file containing a single figure.
 
     Args:
-        fname (string):
-            The name of the file the figure wil be stored in.  Any
-            previously existing file with this name will be overwritten.
-            The file name extension determines the file type.  Currently
-            available file types are `.pdf`, `.ps`, `.eps` and `.png`.
+        fname (string): The name of the file the figure wil be stored
+            in.  Any previously existing file with this name will be
+            overwritten.  The file name extension determines the file
+            type.  Currently available file types are `.pdf`, `.ps`,
+            `.eps` and `.png`.
 
-        width:
-            The figure width.  This can either be a number to give the
-            width in inches, or a string including a length unit like "10cm".
+        width: The figure width.  This can either be a number to give
+            the width in inches, or a string including a length unit
+            like "10cm".
 
-        height:
-            The figure height.  This can either be a number to give the
-            height in inches, or a string including a length unit like "10cm".
+        height: The figure height.  This can either be a number to
+            give the height in inches, or a string including a length
+            unit like "10cm".
 
-        res (number, optional):
-            For raster image formats, `res` specifies the device resolution
-            in pixels per inch.
+        res (number, optional): For raster image formats, `res`
+            specifies the device resolution in pixels per inch.
 
-        style (dict, optional):
-            Dictionary with default plot parameter values for the figure.
+        style (dict, optional): Default plot graphics values for the
+            figure.
+
     """
 
     def __init__(self, file_name, width, height, *, res=100, style={}):
@@ -58,7 +58,7 @@ class Plot(Canvas):
 
         self.file_name = file_name
         """The output file name, as given in the ``file_name`` argument of the
-        plot.Plot constructor."""
+        ``plot.Plot`` constructor (read only)."""
 
         _, ext = os.path.splitext(file_name)
         if ext == '':
@@ -113,7 +113,8 @@ class Plot(Canvas):
                                                 self.file_name)
 
     def close(self):
-        """Close the plot and write all outstanding changes to the file.
+        """Close the plot and write all outstanding changes to the file.  The
+        ``Plot`` object cannot be used any more after this call.
 
         """
         if self.file_type == 'png':

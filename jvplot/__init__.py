@@ -22,8 +22,8 @@ Quick Start
 
 The main entry point for the JvPlot package is the
 :py:class:`jvplot.plot.Plot()` class which creates a new figure.  The
-name ``jvplot.Plot`` can be used as a shorthand for
-:py:class:`jvplot.plot.Plot`.
+name :py:func:`jvplot.Plot()` can be used as a shorthand for
+:py:class:`jvplot.plot.Plot()`.
 
 Modules
 -------

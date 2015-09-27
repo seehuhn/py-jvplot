@@ -66,7 +66,35 @@ def _fixup_lim(lim, data=None):
 
 
 class Canvas:
-    """The Canvas class."""
+    """The Canvas class.  Canvas objects are normally created using
+    the :py:class:`jvplot.plot.Plot` constructor.
+
+    Args:
+        ctx (Cairo drawing context): The Cairo drawing context used to
+            draw the figure.
+
+        x (number): the horizontal position of the left canvas edge on
+            the drawing context, in device coordinates.
+
+        x (number): the vertical position of the bottom canvas edge on
+            the drawing context, in device coordinates.
+
+        w (number): the widths of the canvas in device coordinate
+            units.
+
+        h (number): the height of the canvas in device coordinate
+            units.
+
+        res (number):Resolution of the canvas, *i.e.* the number of
+            device coordinate units per inch.
+
+        parent (Canvas or None): The parent canvas, or ``None`` for
+            the root canvas.
+
+        style (dict, optional): Default plot graphics values for the
+            canvas.
+
+    """
 
     def __init__(self, ctx, x, y, w, h, *, res, parent, style={}):
         """Allocate a new canvas."""
@@ -598,17 +626,18 @@ class Canvas:
         Args:
             x_lim (tuple): the horizontal coordinate range to include.
             y_lim (tuple): the vertical coordinate range to include.
-            aspect (Optional[number]): The aspect ratio of the axes area;
-                1 makes circles shown as circles, values >=1
+            aspect (number, optional): The aspect ratio of the axes
+                area; 1 makes circles shown as circles, values >=1
                 turn circles into ellipses wider than high, and values
                 <=1 turn circles into ellipses higher than wide.
-            width (Optional[dimension]): the width of the axes area.
-            height (Optional[dimension]): the height of the axes area.
-            margin (Optional[dimension]): the width of the outer margin
+            width (dimension, optional): the width of the axes area.
+            height (dimension, optional): the height of the axes area.
+            margin (dimension, optional): the width of the outer margin
                 around the axes area.
             border ():
             padding ():
-            style ():
+            style (dict): graphics parameter values to override the
+                canvas settings, setting the line thickness and color.
 
         """
         style = self._check_style(style)
@@ -680,31 +709,22 @@ class Canvas:
     def draw_lines(self, x, y=None, *, style={}):
         """Draw polygonal line segments.
 
-        :Arguments:
-
-        x : array with ``shape=(n,)`` or ``shape=(n,2)``
-            The vertex coordinates of the line segments.  If `y` is
-            given, `x` must be one-dimensional and the vertices are
-            ``(x[0], y[0])``, ..., ``(x[n-1], y[n-1])``.  Otherwise, `x`
-            must be two-dimensional with two columns and the vertices
-            are ``x[0,:]``, ..., ``x[n-1,:]``.
-
-        y : array with ``shape=(n,)``, optional
-            See the description of `x`.
-
-        style : dict
-            Parameters setting the line width and color.
-
-        :Description:
-
         The given vertices are connected by a chain of line segments.
         Vertices where at least one of the coordinates is ``nan`` are
         ignored and the line is interupted where such vertices occur.
 
         Args:
-            x ():
-            y ():
-            style ():
+            x (array with ``shape=(n,)`` or ``shape=(n,2)``): The
+                vertex coordinates of the line segments.  If `y` is
+                given, `x` must be one-dimensional and the vertices
+                are ``(x[0], y[0])``, ..., ``(x[n-1], y[n-1])``.
+                Otherwise, `x` must be two-dimensional with two
+                columns and the vertices are ``x[0,:]``, ...,
+                ``x[n-1,:]``.
+            y (array with ``shape=(n,)``, optional): See the
+                description of `x`.
+            style (dict): graphics parameter values to override the
+                canvas settings, setting the line thickness and color.
 
         """
         style = self._check_style(style)
@@ -751,7 +771,8 @@ class Canvas:
             margin ():
             border ():
             padding ():
-            style ():
+            style (dict): graphics parameter values to override the
+                canvas settings, setting the line thickness and color.
 
         """
         if self.axes is None:
@@ -770,7 +791,8 @@ class Canvas:
         Args:
             x ():
             y ():
-            style ():
+            style (dict): graphics parameter values to override the
+                canvas settings, setting the line thickness and color.
 
         """
         style = self._check_style(style)
@@ -813,7 +835,8 @@ class Canvas:
             margin ():
             border ():
             padding ():
-            style ():
+            style (dict): graphics parameter values to override the
+                canvas settings, setting the line thickness and color.
 
         """
         if self.axes is None:
@@ -832,7 +855,8 @@ class Canvas:
         Args:
             hist ():
             bin_edges ():
-            style ():
+            style (dict): graphics parameter values to override the
+                canvas settings, setting the line thickness and color.
 
         """
         style = self._check_style(style)
@@ -867,12 +891,33 @@ class Canvas:
                   style={}):
         """Draw a histogram.
 
+        The arguments `x`, `bins`, `range`, `weights`, and `density`
+        have the same meaning as for `numpy.histogram`.
+
         Args:
-            x ():
-            bins ():
-            range ():
-            weights ():
-            density ():
+            x (array_like): Input data. The histogram is computed over
+                the flattened array.
+            bins (int or sequence of numbers, optional): If `bins` is
+                an int, it defines the number of equal-width bins in
+                the given range (10, by default). If `bins` is a
+                sequence, it defines the bin edges, including the
+                rightmost edge, allowing for non-uniform bin widths.
+            range ((float, float), optional): The lower and upper range
+                of the bins. If not provided, range is simply
+                ``(x.min(), x.max())``.  Values outside the range are
+                ignored.
+            weights (array_like, optional): An array of weights, of
+                the same shape as `x`.  Each value contributes its
+                associated weight towards the bin count (instead of
+                1).
+            density (bool, optional): If ``False``, the result will
+                contain the number of samples in each bin. If
+                ``True``, the result is the value of the probability
+                density function at the bin, normalized such that the
+                integral over the range is 1.  Note that the sum of the
+                histogram values will not be equal to 1 unless bins of
+                unity width are chosen; it is not a probability mass
+                function.
             x_lim ():
             y_lim ():
             width ():
@@ -880,7 +925,8 @@ class Canvas:
             margin ():
             border ():
             padding ():
-            style ():
+            style (dict): graphics parameter values to override the
+                canvas settings, setting the line thickness and color.
 
         """
         hist, bin_edges = np.histogram(x, bins=bins, range=range,
@@ -895,31 +941,17 @@ class Canvas:
         return self.axes
 
     def draw_affine(self, *, x=None, y=None, a=None, b=None, style={}):
-        """Draw a straight line on a canvas.
-
-        :Arguments:
-
-        x (float)
-            If `x` is not `None`, draw a vertical line at horizontal
-            position `x` (in data coordinates).
-
-        y (float)
-            If `y` is not `None`, draw a horizontal line at vertical
-            position `y` (in data coordinates).
-
-        a, b (float)
-            If `a` and `b` are not `None`, draw the affine function
-            :math:`a + bx` (in data coordinates).
-
-        style (dict):
-            Parameters setting the line thickness and color.
+        """Draw a straight line.
 
         Args:
-            x ():
-            y ():
-            a ():
-            b ():
-            style ():
+            x (number): If `x` is not ``None``, draw a vertical line at
+                horizontal position `x` (in data coordinates).
+            y (numer): If `y` is not ``None``, draw a horizontal line at
+                vertical position `y` (in data coordinates).
+            a, b (number): If `a` and `b` are not ``None``, draw the
+                affine function :math:`a + bx` (in data coordinates).
+            style (dict): graphics parameter values to override the
+                canvas settings, setting the line thickness and color.
 
         """
 
