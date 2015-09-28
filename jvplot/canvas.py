@@ -67,11 +67,11 @@ def _fixup_lim(lim, data=None):
 
 class Canvas:
     """The Canvas class.  Canvas objects are normally created using
-    the :py:class:`jvplot.plot.Plot` constructor.
+    the :py:func:`jvplot.Plot` function.
 
     Args:
-        ctx (Cairo drawing context): The Cairo drawing context used to
-            draw the figure.
+        ctx (Cairo drawing context): The Cairo context used to draw
+            the figure.
 
         x (number): the horizontal position of the left canvas edge on
             the drawing context, in device coordinates.
@@ -250,6 +250,7 @@ class Canvas:
         """
         if self.axes is not None:
             raise errors.WrongUsage("cannot add title once axes are present")
+
         style = self._check_style(style)
         font_size = self.get_param('title_font_size', style)
         margin = self.get_param('title_top_margin', style)
@@ -309,6 +310,12 @@ class Canvas:
                 inside the edge of the new viewport.
             style (dict): graphics parameter values to override the
                 canvas settings.
+
+        Returns:
+            A pair `(axes, rect)` consisting of the new canvas object
+            `axes` and the outside edge of the axes box border line in
+            `rect`, reported as a 4-tuple `(x, y, width, hight)` in
+            device coordinates.
 
         """
         width = util._convert_dim(width, self.res, self.width,
@@ -618,14 +625,17 @@ class Canvas:
             best_ylim, zip(best_ysteps, best_ylabels),
         ]
 
-    def draw_axes(self, x_lim, y_lim, *, aspect=None, width=None, height=None,
-                  margin=None, border=None, padding=None, style={}):
+    def draw_axes(self, x_lim, y_lim, *, x_label=None, y_label=None,
+                  aspect=None, width=None, height=None, margin=None,
+                  border=None, padding=None, style={}):
         """Draw a set of coordinate axes and return a new canvas representing
         the data area inside the axes.
 
         Args:
-            x_lim (tuple): the horizontal coordinate range to include.
-            y_lim (tuple): the vertical coordinate range to include.
+            x_lim (tuple): the horizontal coordinate range.
+            y_lim (tuple): the vertical coordinate range.
+            x_label (string, optional): the x-axis label.
+            y_label (string, optional): the y-axis label.
             aspect (number, optional): The aspect ratio of the axes
                 area; 1 makes circles shown as circles, values >=1
                 turn circles into ellipses wider than high, and values
@@ -634,15 +644,17 @@ class Canvas:
             height (dimension, optional): the height of the axes area.
             margin (dimension, optional): the width of the outer margin
                 around the axes area.
-            border ():
-            padding ():
+            border (border): space to leave between the axis box and
+                the inside edge of the current canvas.
+            padding (border): space to leave around the inside edge of
+                the new axis box.
             style (dict): graphics parameter values to override the
                 canvas settings, setting the line thickness and color.
+                The parameters in `style` are also used as the default
+                parameters for the context representing the axes area.
 
         """
         style = self._check_style(style)
-        x_label_dist = self.get_param('axis_x_label_dist', style)
-        y_label_dist = self.get_param('axis_y_label_dist', style)
         if margin is None:
             margin = [None, None, None, None]
         else:
@@ -664,13 +676,18 @@ class Canvas:
                                     style)
         tick_width = axes.get_param('axis_tick_width')
         tick_length = axes.get_param('axis_tick_length')
-        font_size = axes.get_param('axis_font_size')
+        x_label_dist = axes.get_param('axis_x_label_dist')
+        y_label_dist = axes.get_param('axis_y_label_dist')
+        tick_font_size = axes.get_param('axis_font_size')
 
         self.ctx.save()
+
         self.ctx.set_line_cap(cairo.LINE_CAP_BUTT)
-        self.ctx.set_font_matrix(
-            cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
         self.ctx.set_line_width(tick_width)
+        self.ctx.set_font_matrix(
+            cairo.Matrix(tick_font_size, 0, 0, -tick_font_size, 0, 0))
+        ascent, descent, _, _, _ = self.ctx.font_extents()
+        x_tick_bottom = rect[1] - tick_length - x_label_dist - ascent + descent
 
         x_lim = _fixup_lim(x_lim)
         y_lim = _fixup_lim(y_lim)
@@ -678,7 +695,6 @@ class Canvas:
             x_lim, y_lim, aspect, self.ctx)
         axes.set_limits(x_lim, y_lim)
 
-        ascent, descent, _, _, _ = self.ctx.font_extents()
         for x_pos, x_lab in x_labels:
             x_pos = axes.offset[0] + x_pos * axes.scale[0]
             ext = self.ctx.text_extents(x_lab)
@@ -696,6 +712,18 @@ class Canvas:
                              y_pos - .5*(ascent - descent))
             self.ctx.show_text(y_lab)
         self.ctx.stroke()
+
+        if x_label:
+            label_font_size = axes.get_param('axis_label_font_size')
+            self.ctx.set_font_matrix(
+                cairo.Matrix(tick_font_size, 0, 0, -tick_font_size, 0, 0))
+            ascent, descent, _, _, _ = self.ctx.font_extents()
+            ext = self.ctx.text_extents(x_label)
+            self.ctx.move_to(rect[0] + .5*rect[2] - .5*ext[4],
+                             x_tick_bottom - ascent)
+            self.ctx.show_text(x_label)
+            self.ctx.stroke()
+
         self.ctx.restore()
 
         axes.x_lim = x_lim
@@ -819,22 +847,38 @@ class Canvas:
             self.ctx.stroke()
         self.ctx.restore()
 
-    def scatter_plot(self, x, y=None, *, aspect=None, x_lim=None, y_lim=None,
-                     width=None, height=None, margin=None, border=None,
-                     padding=None, style={}):
+    def scatter_plot(self, x, y=None, *, x_lim=None, y_lim=None,
+                     x_label=None, y_label=None, aspect=None, width=None,
+                     height=None, margin=None, border=None, padding=None,
+                     style={}):
         """Draw a scatter plot.
 
         Args:
-            x ():
-            y ():
-            aspect ():
-            x_lim ():
-            y_lim ():
-            width ():
-            height ():
-            margin ():
-            border ():
-            padding ():
+            x (array with ``shape=(n,)`` or ``shape=(n,2)``): The
+                vertex coordinates of the points.  If `y` is
+                given, `x` must be one-dimensional and the vertices
+                are ``(x[0], y[0])``, ..., ``(x[n-1], y[n-1])``.
+                Otherwise, `x` must be two-dimensional with two
+                columns and the vertices are ``x[0,:]``, ...,
+                ``x[n-1,:]``.
+            y (array with ``shape=(n,)``, optional): See the
+                description of `x`.
+            x_lim (tuple): the horizontal coordinate range.
+            y_lim (tuple): the vertical coordinate range.
+            x_label (string, optional): the x-axis label.
+            y_label (string, optional): the y-axis label.
+            aspect (number, optional): The aspect ratio of the axes
+                area; 1 makes circles shown as circles, values >=1
+                turn circles into ellipses wider than high, and values
+                <=1 turn circles into ellipses higher than wide.
+            width (dimension, optional): the width of the axes area.
+            height (dimension, optional): the height of the axes area.
+            margin (dimension, optional): the width of the outer margin
+                around the axes area.
+            border (border): space to leave between the axis box and
+                the inside edge of the current canvas.
+            padding (border): space to leave around the inside edge of
+                the new axis box.
             style (dict): graphics parameter values to override the
                 canvas settings, setting the line thickness and color.
 
@@ -843,10 +887,10 @@ class Canvas:
             x, y = util._check_coords(x, y)
             x_lim = _fixup_lim(x_lim, x)
             y_lim = _fixup_lim(y_lim, y)
-            self.draw_axes(
-                x_lim, y_lim, aspect=aspect, width=width,
-                height=height, margin=margin, border=border, padding=padding,
-                style=style)
+            self.draw_axes(x_lim, y_lim, x_label=x_label,
+                           y_label=y_label, aspect=aspect, width=width,
+                           height=height, margin=margin, border=border,
+                           padding=padding, style=style)
         self.axes.draw_points(x, y)
         return self.axes
 
