@@ -112,9 +112,9 @@ def _check_coords(x, y):
     else:
         y = np.array(y)
     if len(x.shape) != 1:
-        raise ValueError('x has wrong shape %s' % x.shape)
+        raise ValueError('x has wrong shape %s' % repr(x.shape))
     if len(y.shape) != 1:
-        raise ValueError('y has wrong shape %s' % y.shape)
+        raise ValueError('y has wrong shape %s' % repr(y.shape))
     if len(x) != len(y):
         tmpl = 'x and y have incompatible length: %d != %d'
         raise ValueError(tmpl % (len(x), len(y)))

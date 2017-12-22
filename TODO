@@ -4,6 +4,10 @@ API design
 - rename Canvas.add_title() to Canvas.title()?
 - swap the row/column arguments of Canvas.subplot()?
 - rationalise use of the margin/border/padding scheme?
+- Maybe split Canvas into two classes, one which only has the
+  high-level methods like plot and histogram, and one which adds all
+  the methods which require the coordinate system already to be set
+  up.
 
 bug fixes
 ---------
