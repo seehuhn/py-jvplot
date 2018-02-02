@@ -79,7 +79,7 @@ class Canvas:
         x (number): the vertical position of the bottom canvas edge on
             the drawing context, in device coordinates.
 
-        w (number): the widths of the canvas in device coordinate
+        w (number): the width of the canvas in device coordinate
             units.
 
         h (number): the height of the canvas in device coordinate
@@ -96,7 +96,7 @@ class Canvas:
 
     """
 
-    def __init__(self, ctx, x, y, w, h, *, res, parent, style={}):
+    def __init__(self, ctx, x, y, w, h, *, res, parent, style=None):
         """Allocate a new canvas."""
         style = self._check_style(style)
 
@@ -130,7 +130,7 @@ class Canvas:
         units per inch (read only)."""
 
         self.parent = parent
-        self.style = style
+        self.style = style if style is not None else {}
 
         self.offset = None
         self.scale = None
@@ -142,14 +142,16 @@ class Canvas:
 
     @staticmethod
     def _check_style(style):
+        if style is None:
+            return {}
         style = dict(style)
         invalid = style.keys() - param.valid_keys
         for name in invalid:
-            msg = "invalid parameter '%s' set in style" % name
+            msg = "invalid style parameter '%s'" % name
             raise errors.InvalidParameterName(msg)
         return style
 
-    def get_param(self, name, style={}):
+    def get_param(self, name, style=None):
         """Get the value of graphics parameter ``name``.  If the optional
         argument ``style`` is given, it must be a dictionary, mapping
         parameter names to values; in this case, values in ``style``
@@ -161,29 +163,26 @@ class Canvas:
                 canvas settings.
 
         """
-        style = self._check_style(style)
         info = param.default.get(name)
         if info is None:
             msg = "unknown parameter '%s'" % name
             raise errors.InvalidParameterName(msg)
 
-        def styles():
-            if style:
-                yield style
-            elem = self
-            while elem:
-                yield elem.style
-                elem = elem.parent
-        def get(x):
-            for s in styles():
-                if x in s:
-                    return s[x]
-            else:
-                return info[1]
+        elem = self
+        if style is not None:
+            style = self._check_style(style)
+            style0 = elem.style.copy()
+            style0.update(style)
+        else:
+            style0 = elem.style
 
         names = [name]
+        style = style0
         while True:
-            value = get(name)
+            value = style.get(name)
+            print(name, value, style)
+            if value is None:
+                value = info[1]
             if isinstance(value, str) and value.startswith('$'):
                 name = value[1:]
                 if name in names:
@@ -191,14 +190,19 @@ class Canvas:
                     raise errors.WrongUsage("infinite parameter loop: " + msg)
                 names.append(name)
                 info = param.default.get(name)
+                elem = self
+                style = style0
+            elif value == "inherit":
+                elem = elem.parent
+                style = elem.style
             else:
                 break
         if info[0] == 'width':
-            return util._convert_dim(value, self.res, self.width)
+            return util.convert_dim(value, self.res, self.width)
         elif info[0] == 'height':
-            return util._convert_dim(value, self.res, self.height)
+            return util.convert_dim(value, self.res, self.height)
         elif info[0] == 'dim':
-            return util._convert_dim(value, self.res)
+            return util.convert_dim(value, self.res)
         elif info[0] == 'col':
             return color.get(value)
         elif info[0] == 'bool':
@@ -220,16 +224,16 @@ class Canvas:
             raise errors.WrongUsage(msg)
 
         padding = util._check_vec(padding, 4, True)
-        p_top = util._convert_dim(padding[0], self.res, self.height)
-        p_right = util._convert_dim(padding[1], self.res, self.width)
-        p_bottom = util._convert_dim(padding[2], self.res, self.height)
-        p_left = util._convert_dim(padding[3], self.res, self.width)
+        p_top = util.convert_dim(padding[0], self.res, self.height)
+        p_right = util.convert_dim(padding[1], self.res, self.width)
+        p_bottom = util.convert_dim(padding[2], self.res, self.height)
+        p_left = util.convert_dim(padding[3], self.res, self.width)
         self.x += p_left
         self.width -= p_left + p_right
         self.y += p_bottom
         self.height -= p_bottom + p_top
 
-    def add_title(self, text, *, style={}):
+    def add_title(self, text, *, style=None):
         """Add a title showing the string ``text`` along the top edge of the
         canvas.  This function reduces the height of the canvas.
 
@@ -318,35 +322,29 @@ class Canvas:
             device coordinates.
 
         """
-        width = util._convert_dim(width, self.res, self.width,
-                                  allow_none=True)
-        height = util._convert_dim(height, self.res, self.height,
-                                   allow_none=True)
+        width = util.convert_dim(width, self.res, self.width)
+        height = util.convert_dim(height, self.res, self.height)
 
         margin = util._check_vec(margin, 4, True)
-        m_top = util._convert_dim(margin[0], self.res, self.height,
-                                  allow_none=True)
-        m_right = util._convert_dim(margin[1], self.res, self.width,
-                                    allow_none=True)
-        m_bottom = util._convert_dim(margin[2], self.res, self.height,
-                                     allow_none=True)
-        m_left = util._convert_dim(margin[3], self.res, self.width,
-                                   allow_none=True)
+        m_top = util.convert_dim(margin[0], self.res, self.height)
+        m_right = util.convert_dim(margin[1], self.res, self.width)
+        m_bottom = util.convert_dim(margin[2], self.res, self.height)
+        m_left = util.convert_dim(margin[3], self.res, self.width)
 
         if isinstance(border, str):
             border = border.split()
             border_width = border[0]
         else:
             border_width = border
-        border_width = util._convert_dim(border_width, self.res)
+        border_width = util.convert_dim(border_width, self.res)
         if border_width < 0:
             raise ValueError('negative border width in "%s"' % border)
 
         padding = util._check_vec(padding, 4, True)
-        p_top = util._convert_dim(padding[0], self.res, self.height)
-        p_right = util._convert_dim(padding[1], self.res, self.width)
-        p_bottom = util._convert_dim(padding[2], self.res, self.height)
-        p_left = util._convert_dim(padding[3], self.res, self.width)
+        p_top = util.convert_dim(padding[0], self.res, self.height)
+        p_right = util.convert_dim(padding[1], self.res, self.width)
+        p_bottom = util.convert_dim(padding[2], self.res, self.height)
+        p_left = util.convert_dim(padding[3], self.res, self.width)
 
         total_w = sum(x for x in [m_left, border_width, p_left, width,
                                   p_right, border_width, m_right]
@@ -407,7 +405,7 @@ class Canvas:
         return res, border_rect
 
     def viewport(self, *, width=None, height=None, margin=None, border=0,
-                 padding=0, style={}):
+                 padding=0, style=None):
         """Get a new canvas representing a rectangular sub-region of the
         current canvas.
 
@@ -427,7 +425,7 @@ class Canvas:
         res, _ = self._viewport(width, height, margin, border, padding, style)
         return res
 
-    def subplot(self, cols, rows, idx=None, *, padding=0, style={}):
+    def subplot(self, cols, rows, idx=None, *, padding=0, style=None):
         """Split the current canvas into a ``cols``-times-``rows`` grid and
         return the sub-canvas corresponding to column ``idx % cols``
         and row ``idx // cols`` (where both row and column counts
@@ -469,7 +467,7 @@ class Canvas:
 
     def draw_text(self, text, x, y=None, *, horizontal_align="start",
                   vertical_align="baseline", rotate=0, rotate_deg=None,
-                  padding=["1pt", "3pt"], style={}):
+                  padding=["1pt", "3pt"], style=None):
         """Add text to a canvas.
 
         Args:
@@ -501,10 +499,10 @@ class Canvas:
             rotate = float(rotate_deg) / 180 * np.pi
 
         padding = util._check_vec(padding, 4, True)
-        p_top = util._convert_dim(padding[0], self.res, self.height)
-        p_right = util._convert_dim(padding[1], self.res, self.width)
-        p_bottom = util._convert_dim(padding[2], self.res, self.height)
-        p_left = util._convert_dim(padding[3], self.res, self.width)
+        p_top = util.convert_dim(padding[0], self.res, self.height)
+        p_right = util.convert_dim(padding[1], self.res, self.width)
+        p_bottom = util.convert_dim(padding[2], self.res, self.height)
+        p_left = util.convert_dim(padding[3], self.res, self.width)
 
         self.ctx.save()
         self.ctx.set_font_matrix(
@@ -522,7 +520,7 @@ class Canvas:
         elif horizontal_align == "center":
             x_offs = -ext[0] - .5 * ext[2]
         else:
-            x_offs = param._convert_dim(horizontal_align, self.res, ext[2])
+            x_offs = param.convert_dim(horizontal_align, self.res, ext[2])
         ascent, descent, line_height, _, _ = self.ctx.font_extents()
         if vertical_align == "baseline":
             y_offs = 0
@@ -533,7 +531,7 @@ class Canvas:
         elif vertical_align == "center":
             y_offs = (descent - ascent) / 2
         else:
-            y_offs = param._convert_dim(vertical_align, self.res, line_height)
+            y_offs = param.convert_dim(vertical_align, self.res, line_height)
 
         if bg is not None:
             self.ctx.save()
@@ -627,7 +625,7 @@ class Canvas:
 
     def draw_axes(self, x_lim, y_lim, *, x_label=None, y_label=None,
                   aspect=None, width=None, height=None, margin=None,
-                  border=None, padding=None, style={}):
+                  border=None, padding=None, style=None):
         """Draw a set of coordinate axes and return a new canvas representing
         the data area inside the axes.
 
@@ -734,7 +732,7 @@ class Canvas:
 
         return axes
 
-    def draw_lines(self, x, y=None, *, style={}):
+    def draw_lines(self, x, y=None, *, style=None):
         """Draw polygonal line segments.
 
         The given vertices are connected by a chain of line segments.
@@ -785,7 +783,7 @@ class Canvas:
 
     def plot(self, x, y=None, *, aspect=None, x_lim=None, y_lim=None,
              width=None, height=None, margin=None, border=None, padding=None,
-             style={}):
+             style=None):
         """Draw a line plot.
 
         Args:
@@ -814,7 +812,7 @@ class Canvas:
         self.axes.draw_lines(x, y, style=style)
         return self.axes
 
-    def draw_points(self, x, y=None, *, style={}):
+    def draw_points(self, x, y=None, *, style=None):
         """
         Args:
             x ():
@@ -850,7 +848,7 @@ class Canvas:
     def scatter_plot(self, x, y=None, *, x_lim=None, y_lim=None,
                      x_label=None, y_label=None, aspect=None, width=None,
                      height=None, margin=None, border=None, padding=None,
-                     style={}):
+                     style=None):
         """Draw a scatter plot.
 
         Args:
@@ -894,11 +892,11 @@ class Canvas:
         self.axes.draw_points(x, y)
         return self.axes
 
-    def draw_histogram(self, hist, bin_edges, *, style={}):
+    def draw_histogram(self, hist, bin_edges, *, style=None):
         """
         Args:
-            hist ():
-            bin_edges ():
+            hist (array): the data to plot.
+            bin_edges (array): a vector of bin edges.
             style (dict): graphics parameter values to override the
                 canvas settings, setting the line thickness and color.
 
@@ -932,7 +930,7 @@ class Canvas:
     def histogram(self, x, *, bins=10, range=None, weights=None,
                   density=False, x_lim=None, y_lim=None, width=None,
                   height=None, margin=None, border=None, padding=None,
-                  style={}):
+                  style=None):
         """Draw a histogram.
 
         The arguments `x`, `bins`, `range`, `weights`, and `density`
@@ -984,16 +982,17 @@ class Canvas:
         self.axes.draw_histogram(hist, bin_edges, style=style)
         return self.axes
 
-    def draw_affine(self, *, x=None, y=None, a=None, b=None, style={}):
+    def draw_affine(self, *, x=None, y=None, a=None, b=None, style=None):
         """Draw a straight line.
 
         Args:
-            x (number): If `x` is not ``None``, draw a vertical line at
+            x (number): if `x` is not ``None``, draw a vertical line at
                 horizontal position `x` (in data coordinates).
-            y (numer): If `y` is not ``None``, draw a horizontal line at
+            y (number): if `y` is not ``None``, draw a horizontal line at
                 vertical position `y` (in data coordinates).
-            a, b (number): If `a` and `b` are not ``None``, draw the
+            a (number): if `a` and `b` are not ``None``, draw the
                 affine function :math:`a + bx` (in data coordinates).
+            b (number): see `a`.
             style (dict): graphics parameter values to override the
                 canvas settings, setting the line thickness and color.
 

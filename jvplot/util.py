@@ -22,18 +22,19 @@ UNITS = {
 }
 
 
-def _convert_dim(dim, res, parent_length=None, allow_none=False):
+def convert_dim(dim, res, parent_length=None):
     """Convert dimensions to device coordinates.
 
-    Arguments:
-    dim -- The dimension either a number (inches) or a dimension string
-        including a unit (e.g. "1cm").
-    res -- The device resolution in units/inch.
-    parent_length -- The length of the surrounding element in inches.  If this
-        is set, lengths (e.g. "50%") relative to the parent length are allowed.
-    allow_none -- If set to true, None is accepted as a valid dimension.
+    Args:
+        dim: The dimension either a number (inches) or a dimension
+            string including a unit (e.g. "1cm").
+        res: The device resolution in units/inch.
+        parent_length: The length of the surrounding element in
+            inches.  If this is set, relative lengths (e.g. "50%") are
+            allowed.
+
     """
-    if allow_none and dim is None:
+    if dim is None:
         return None
     unit = 1
     try:

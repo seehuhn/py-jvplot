@@ -29,7 +29,7 @@ def test_canvas_param():
     # parameter type 'dim'
     key = 'font_size'
     val = c1.get_param(key)
-    assert val == util._convert_dim(param.default[key][1], res)
+    assert val == util.convert_dim(param.default[key][1], res)
 
     # parameter type 'col'
     key = 'line_col'
@@ -44,24 +44,27 @@ def test_canvas_param():
     # variables
     key = 'plot_lw'             # default value is '$lw'
     val = c1.get_param(key)
-    nose.tools.assert_almost_equal(val, util._convert_dim(lw, res))
+    nose.tools.assert_almost_equal(val, util.convert_dim(lw, res))
 
     # inheritance
     font_size1 = '19mm'
     font_size2 = '21mm'
     c2 = canvas.Canvas(None, 50, 100, 100, 200, res=res, parent=c1,
-                       style={'font_size': font_size1})
+                       style={'font_size': font_size1,
+                              'lw': 'inherit',
+                              'margin.bottom': 'inherit',
+                              'margin.left': 'inherit'})
     key = 'font_size'
     val = c2.get_param(key)     # value taken from c2
-    nose.tools.assert_equal(val, util._convert_dim(font_size1, res))
+    nose.tools.assert_equal(val, util.convert_dim(font_size1, res))
     val = c2.get_param(key, style={key: font_size2}) # ... from explicit style
-    assert val == util._convert_dim(font_size2, res)
+    assert val == util.convert_dim(font_size2, res)
     key = 'lw'
     val = c2.get_param(key)     # ... from c1
-    assert val == util._convert_dim(lw, res)
+    assert val == util.convert_dim(lw, res)
     key = 'axis_label_dist'
     val = c2.get_param(key)     # ... from param.default
-    assert val == util._convert_dim(param.default[key][1], res)
+    assert val == util.convert_dim(param.default[key][1], res)
 
     # inheritance and relative values
     key = 'margin.left'
@@ -72,7 +75,7 @@ def test_canvas_param():
     key = 'margin.bottom'
     # c1 has '$margin.right', the latter taken from explicit style
     val = c2.get_param(key, style={'margin.right': '10px'})
-    nose.tools.assert_equal(val, util._convert_dim('10px', res))
+    nose.tools.assert_equal(val, util.convert_dim('10px', res))
 
     # invalid parameter names
     with nose.tools.assert_raises(errors.InvalidParameterName):

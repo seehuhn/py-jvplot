@@ -3,7 +3,8 @@ API design
 
 - rename Canvas.add_title() to Canvas.title()?
 - swap the row/column arguments of Canvas.subplot()?
-- rationalise use of the margin/border/padding scheme?
+- Rationalise use of the margin/border/padding scheme.  Should these
+  be in style?
 - Maybe split Canvas into two classes, one which only has the
   high-level methods like plot and histogram, and one which adds all
   the methods which require the coordinate system already to be set
@@ -32,8 +33,9 @@ enhancements
 - Relative font sizes can be easily implemented using the
   parent_height argument of param.get().  But what are the font sizes
   relative to?
-- Use a complicated clip region to preserve the inward halfs of the axis ticks?
-  Or provide a function to redraw the tick labels?
+- Use a complicated clip region to preserve the inward halfs of the
+  axis ticks?  Or provide a function to redraw the tick labels?  Or
+  draw tick labels in the destructor?
 - Should histograms have padding-bottom = 0?
 - Should the box centers or the box boundaries be labelled in histograms?
 - Choose a nicer style for the sphinx HTML output.

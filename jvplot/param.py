@@ -12,7 +12,7 @@
 # GNU General Public License for more details.
 
 from . import color
-from .util import _convert_dim
+from .util import convert_dim
 
 # name: (type, default, description)
 default = {

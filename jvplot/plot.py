@@ -23,7 +23,7 @@ import os.path
 import cairocffi as cairo
 
 from .canvas import Canvas, _prepare_context
-from .util import _convert_dim
+from .util import convert_dim
 
 
 class Plot(Canvas):
@@ -31,10 +31,10 @@ class Plot(Canvas):
     """The Plot Class repesents a file containing a single figure.
 
     Args:
-        fname (string): The name of the file the figure wil be stored
-            in.  Any previously existing file with this name will be
-            overwritten.  The file name extension determines the file
-            type.  Currently available file types are `.pdf`, `.ps`,
+        file_name (string): The name of the file the figure will be
+            stored in.  Any previously existing file with this name
+            will be overwritten.  The file name extension determines
+            the file type.  Available file types are `.pdf`, `.ps`,
             `.eps` and `.png`.
 
         width: The figure width.  This can either be a number to give
@@ -68,8 +68,8 @@ class Plot(Canvas):
 
         if ext != 'png':
             res = 72
-        w = _convert_dim(width, res)
-        h = _convert_dim(height, res)
+        w = convert_dim(width, res)
+        h = convert_dim(height, res)
         if ext == 'pdf':
             surface = cairo.PDFSurface(file_name, w, h)
         elif ext == 'ps':
@@ -109,7 +109,7 @@ class Plot(Canvas):
         self.close()
 
     def __str__(self):
-        return '<JvPlot %.0fbpx%.0fbp "%s">' % (self.width, self.h,
+        return '<JvPlot %.0fbpx%.0fbp "%s">' % (self.width, self.height,
                                                 self.file_name)
 
     def close(self):

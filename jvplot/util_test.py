@@ -12,10 +12,10 @@
 # GNU General Public License for more details.
 
 import nose.tools
-from .util import _convert_dim
+from .util import convert_dim
 
 
-def test_convert_dim():
+def testconvert_dim():
     for res in [50, 72, 100]:
         tests = [
             ('1in', 1),
@@ -27,7 +27,7 @@ def test_convert_dim():
         ]
         print('\nres =', res)
         for a, b in tests:
-            da = _convert_dim(a, res)
-            db = _convert_dim(b, res)
+            da = convert_dim(a, res)
+            db = convert_dim(b, res)
             print(a, b, res)
             nose.tools.assert_almost_equal(da, db)
