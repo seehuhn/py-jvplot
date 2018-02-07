@@ -180,7 +180,6 @@ class Canvas:
         style = style0
         while True:
             value = style.get(name)
-            print(name, value, style)
             if value is None:
                 value = info[1]
             if isinstance(value, str) and value.startswith('$'):
