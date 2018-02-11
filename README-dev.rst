@@ -11,6 +11,7 @@ Development Mode
 To be able to make changes to the source without re-installing
 the package after every change:
 
+    python3 setup.py build
     pip3 install -e .
 
 Unit Tests

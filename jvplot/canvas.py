@@ -44,10 +44,18 @@ def _fixup_lim(lim, data=None):
         tmpl = 'axis limit must be a pair, not "%s"'
         raise TypeError(tmpl % repr(lim))
 
-    if a is None and data is not None:
-        a = np.nanmin(data)
-    if b is None and data is not None:
-        b = np.nanmax(data)
+    if data is not None:
+        data = np.array(data)
+        data = data[np.isfinite(data)]
+        data_min = np.min(data)
+        data_max = np.max(data)
+    else:
+        data_min = data_max = None
+
+    if a is None and data_min is not None:
+        a = data_min
+    if b is None and data_max is not None:
+        b = data_max
     try:
         a = float(a)
         b = float(b)

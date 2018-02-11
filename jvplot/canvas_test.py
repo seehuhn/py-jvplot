@@ -1,11 +1,28 @@
 import nose.tools
 
+import numpy as np
+
 from . import canvas
 from . import color
 from . import errors
 from . import param
 from . import util
 
+
+def test_fixup_lim():
+    tests = [
+        [(None, (2,1,3)), (1, 3)],
+        [(None, 1), (0, 1)],
+        [(None, -1), (-1, 0)],
+        [((-1,1), (-2,0,2)), (-1, 1)],
+        [(None, (2,np.NaN,1,np.Inf,3,-np.Inf)), (1, 3)],
+    ]
+    for (lim, data), (a_exp, b_exp) in tests:
+        a, b = canvas._fixup_lim(lim, data)
+        assert np.isfinite(a)
+        assert np.isfinite(b)
+        assert a == a_exp
+        assert b == b_exp
 
 def test_canvas_param():
     res = 100
