@@ -11,11 +11,11 @@ from . import util
 
 def test_fixup_lim():
     tests = [
-        [(None, (2,1,3)), (1, 3)],
+        [(None, (2, 1, 3)), (1, 3)],
         [(None, 1), (0, 1)],
         [(None, -1), (-1, 0)],
-        [((-1,1), (-2,0,2)), (-1, 1)],
-        [(None, (2,np.NaN,1,np.Inf,3,-np.Inf)), (1, 3)],
+        [((-1, 1), (-2, 0, 2)), (-1, 1)],
+        [(None, (2, np.NaN, 1, np.Inf, 3, -np.Inf)), (1, 3)],
     ]
     for (lim, data), (a_exp, b_exp) in tests:
         a, b = canvas._fixup_lim(lim, data)
@@ -23,6 +23,7 @@ def test_fixup_lim():
         assert np.isfinite(b)
         assert a == a_exp
         assert b == b_exp
+
 
 def test_canvas_param():
     res = 100
@@ -74,7 +75,7 @@ def test_canvas_param():
     key = 'font_size'
     val = c2.get_param(key)     # value taken from c2
     nose.tools.assert_equal(val, util.convert_dim(font_size1, res))
-    val = c2.get_param(key, style={key: font_size2}) # ... from explicit style
+    val = c2.get_param(key, style={key: font_size2})  # ... from explicit style
     assert val == util.convert_dim(font_size2, res)
     key = 'lw'
     val = c2.get_param(key)     # ... from c1
@@ -98,7 +99,7 @@ def test_canvas_param():
     with nose.tools.assert_raises(errors.InvalidParameterName):
         # mis-spelled 'font_size'
         canvas.Canvas(None, 50, 100, 100, 200, res=res, parent=c1,
-                       style={'font.size': font_size1})
+                      style={'font.size': font_size1})
     with nose.tools.assert_raises(errors.InvalidParameterName):
         # mis-spelled 'font_size'
         c2.get_param('font.size')

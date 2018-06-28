@@ -600,7 +600,7 @@ class Canvas:
                     best_ylim = lim
                     best_ysteps = steps
                     best_ylabels = labels
-        else: # aspect ratio is set
+        else:  # aspect ratio is set
             best_p = np.inf
             q = aspect * self.width / self.height
             for data in axis._try_pairs(x_lim, y_lim, q):
@@ -721,7 +721,7 @@ class Canvas:
         if x_label:
             label_font_size = axes.get_param('axis_label_font_size')
             self.ctx.set_font_matrix(
-                cairo.Matrix(tick_font_size, 0, 0, -tick_font_size, 0, 0))
+                cairo.Matrix(label_font_size, 0, 0, -label_font_size, 0, 0))
             ascent, descent, _, _, _ = self.ctx.font_extents()
             ext = self.ctx.text_extents(x_label)
             self.ctx.move_to(rect[0] + .5*rect[2] - .5*ext[4],

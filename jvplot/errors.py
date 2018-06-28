@@ -11,6 +11,7 @@ class WrongUsage(JvPlotError):
 
     pass
 
+
 class InvalidParameterName(WrongUsage):
 
     pass

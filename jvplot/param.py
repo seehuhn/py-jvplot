@@ -11,9 +11,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-from . import color
-from .util import convert_dim
-
 # name: (type, default, description)
 default = {
     'affine_line_col': ('col', '$line_col', 'default line color for straight lines'),
