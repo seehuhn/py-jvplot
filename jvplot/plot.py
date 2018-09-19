@@ -22,7 +22,7 @@ import os.path
 
 import cairocffi as cairo
 
-from .canvas import Canvas, _prepare_context
+from .canvas import Canvas
 from .util import convert_dim
 
 
@@ -61,10 +61,12 @@ class Plot(Canvas):
         ``plot.Plot`` constructor (read only)."""
 
         _, ext = os.path.splitext(file_name)
-        if ext == '':
-            raise ValueError('file name "%s" lacks an extension' % file_name)
-        else:
+        if ext:
             ext = ext[1:]
+        elif file_name == "/dev/null":
+            ext = None
+        else:
+            raise ValueError('file name "%s" lacks an extension' % file_name)
 
         if ext != 'png':
             res = 72
@@ -81,32 +83,21 @@ class Plot(Canvas):
             w = int(w + 0.5)
             h = int(h + 0.5)
             surface = cairo.ImageSurface(cairo.FORMAT_RGB24, w, h)
+        elif ext is None:
+            surface = cairo.RecordingSurface(cairo.CONTENT_COLOR,
+                                             (0, 0, w, h))
         else:
             raise ValueError('unsupported file type "%s"' % ext)
-
         ctx = cairo.Context(surface)
+
         # move the origin to the bottom left corner:
         ctx.translate(0, h)
         ctx.scale(1, -1)
-        _prepare_context(ctx)
 
-        if ext == 'png':
-            ctx.save()
-            ctx.set_source_rgb(1, 1, 1)
-            ctx.rectangle(0, 0, w, h)
-            ctx.fill()
-            ctx.restore()
-
-        super().__init__(ctx, 0, 0, w, h, res=res, parent=None, style=style)
+        super().__init__(ctx, [0, 0, w, h], res=res, style=style)
         self.surface = surface
         self.file_name = file_name
         self.file_type = ext
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close()
 
     def __str__(self):
         return '<JvPlot %.0fbpx%.0fbp "%s">' % (self.width, self.height,
@@ -117,6 +108,7 @@ class Plot(Canvas):
         ``Plot`` object cannot be used any more after this call.
 
         """
+        super().close()
         if self.file_type == 'png':
             self.surface.write_to_png(self.file_name)
         else:

@@ -975,9 +975,9 @@ names = {
 
 def get(col):
     r = -1
-    if col is None:
-        return None
-    if col.startswith('#'):
+    if col is None or col == "transparent":
+        r, g, b, a = (1.0, 1.0, 1.0, 0.0)
+    elif col.startswith('#'):
         if len(col) == 1 + 6:
             r = int(col[1:3], 16) / 255
             g = int(col[3:5], 16) / 255

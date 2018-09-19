@@ -8,4 +8,7 @@ with Plot('demo1.pdf', '4.5in', '4.5in') as fig:
     fig.scatter_plot(np.random.rand(1000),
                      np.random.rand(1000),
                      aspect=1,
-                     margin="1cm")
+                     style={
+                         'axis_margin_bottom': '1cm',
+                         'axis_margin_left': '1cm',
+                     })

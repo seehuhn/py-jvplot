@@ -1,5 +1,5 @@
 # __init__.py - package directory file for JvPlot
-# Copyright (C) 2014 Jochen Voss <voss@seehuhn.de>
+# Copyright (C) 2014-2018 Jochen Voss <voss@seehuhn.de>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,9 +37,9 @@ The JvPlot package is composed of the following main modules:
 """
 
 __title__ = 'jvplot'
-__version__ = '0.2'
+__version__ = '0.3'
 __author__ = 'Jochen Voss'
 __license__ = 'GPLv3+'
-__copyright__ = 'Copyright (c) 2014 Jochen Voss'
+__copyright__ = 'Copyright (c) 2014-2018 Jochen Voss'
 
 from .plot import Plot
