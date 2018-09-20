@@ -277,8 +277,10 @@ class Canvas:
         current canvas.
 
         Args:
-            width (dim): The width of the viewport.
-            height (dim): The height of the viewport.
+            rect (list of length 4): the location of the viewport
+                on the page.
+            x_range():
+            y_range():
             style (dict): graphics parameter values to override the
                 canvas settings.
 
@@ -295,7 +297,13 @@ class Canvas:
 
         return res
 
-    def subplot(self, cols, rows, idx=None, *, padding=0, style=None):
+    def viewport(self, rect, x_range, y_range, *, style=None):
+        style = param.check_keys(style)
+        x_range = data_range(x_range)
+        y_range = data_range(y_range)
+        return self._viewport(rect, x_range, y_range, style)
+
+    def subplot(self, cols, rows, idx=None, *, style=None):
         """Split the current canvas into a ``cols``-times-``rows`` grid and
         return the sub-canvas corresponding to column ``idx % cols``
         and row ``idx // cols`` (where both row and column counts
@@ -305,8 +313,6 @@ class Canvas:
             cols (int): Number of columns.
             rows (int): Number of rows.
             idx (int): The position of the returned viewport in the grid.
-            padding (string or tuple of length 4): Amount of padding
-                inside the edge of the new viewport.
             style (dict): graphics parameter values to override the
                 canvas settings.
 
@@ -532,8 +538,8 @@ class Axes(Canvas):
         self.x_range = x_range
         self.y_range = y_range
 
-        x_range = util._check_range(x_range)
-        y_range = util._check_range(y_range)
+        x_range = data_range(x_range)
+        y_range = data_range(y_range)
 
         # The horizontal scale and offset are determined by the
         # following two equations:

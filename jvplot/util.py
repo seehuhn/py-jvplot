@@ -93,13 +93,6 @@ def _check_num_vec(v, n, broadcast=False):
     return v
 
 
-def _check_range(r):
-    r = _check_num_vec(r, 2)
-    if not r[0] < r[1]:
-        raise ValueError("invalid range %s" % repr(r))
-    return r
-
-
 def _check_coords(x, y):
     x = np.array(x)
     if y is None:

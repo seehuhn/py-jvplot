@@ -6,7 +6,7 @@ from jvplot import Plot
 
 style = dict(plot_lw='4pt')
 with Plot('demo4.pdf', '4.5in', '4.5in', style=style) as pl:
-    pl.set_limits((0, 1), (0, 1))
+    ax = pl.viewport([0, 0, pl.width, pl.height], (0, 1), (0, 1))
     coords = [
         [ 0.1, 0.1 ],
         [ 0.1, 0.9 ],
@@ -18,4 +18,6 @@ with Plot('demo4.pdf', '4.5in', '4.5in', style=style) as pl:
         [ 0.9, 0.9 ],
         [ 0.9, 0.1 ],
     ]
-    pl.draw_lines(coords)
+    ax.draw_lines(coords, style={
+        'lw': '3pt',
+    })
