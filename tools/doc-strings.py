@@ -32,16 +32,17 @@ class FindMethods(ast.NodeVisitor):
 
     def visit_FunctionDef(self, node):
         name = node.name
-        if name.startswith("__"):
-            return
+        # if name.startswith("__"):
+        #     return
         argnames = [arg.arg for arg in node.args.args]
         argnames.extend(arg.arg for arg in node.args.kwonlyargs)
         assert node.args.kwarg is None
         if argnames[0] != 'self':
             return
         argnames = argnames[1:]
-        docstring = ast.get_docstring(node)
-        docs[name] = (node.lineno, argnames, docstring)
+        if not name.startswith("__"):
+            docstring = ast.get_docstring(node)
+            docs[name] = (node.lineno, argnames, docstring)
 
         print("**", name, "**")
         for stmt in ast.walk(node):
@@ -50,7 +51,7 @@ class FindMethods(ast.NodeVisitor):
             names = get_call_name(stmt.func)
             if not names or names[0] != 'self':
                 continue
-            if names[1] == 'get_param':
+            if name != "get_param" and names[1].endswith('get_param'):
                 print("uses '" + stmt.args[0].s + "'")
             else:
                 print("calls", ".".join(names))

@@ -19,6 +19,8 @@ JvPlot package.
 
 """
 
+import sys
+
 import numpy as np
 
 import cairocffi as cairo
@@ -50,7 +52,7 @@ class Canvas:
         h (number): the height of the canvas in device coordinate
             units.
 
-        res (number):Resolution of the canvas, *i.e.* the number of
+        res (number): Resolution of the canvas, *i.e.* the number of
             device coordinate units per inch.
 
         style (dict, optional): Default plot graphics values for the
@@ -59,8 +61,6 @@ class Canvas:
     """
 
     def __init__(self, ctx, rect, *, res, style=None, parent=None):
-        """Allocate a new canvas."""
-
         if parent is None:
             style = param.update(param.ROOT, style)
         else:
@@ -97,9 +97,9 @@ class Canvas:
         self.height = h
         "Height of the canvas in device coordinate units (read only)."
 
-        self._on_close = []
+        self.on_close = []
         if parent:
-            parent._on_close.append(self.close)
+            parent.on_close.append(self.close)
 
         # draw the background, if any
         r, g, b, a = self._get_param("bg_col", style)
@@ -131,8 +131,15 @@ class Canvas:
         self.close()
 
     def close(self):
-        while self._on_close:
-            fn = self._on_close.pop()
+        """Close the canvas.
+
+        This must be called once drawing on the canvas is completed.
+        Instead of calling this method explicitly, a context handler
+        can be used.
+
+        """
+        while self.on_close:
+            fn = self.on_close.pop()
             fn()
 
     def plot(self, x, y=None, *, x_extra=None, y_extra=None, aspect=None,
@@ -142,6 +149,8 @@ class Canvas:
         Args:
             x ():
             y ():
+            x_extra ():
+            y_extra ():
             aspect ():
             x_lim ():
             y_lim ():
@@ -163,14 +172,14 @@ class Canvas:
         the data area inside the axes.
 
         Args:
+            x_range ():
+            y_range ():
             x_lim (tuple): the horizontal coordinate range.
             y_lim (tuple): the vertical coordinate range.
-            x_label (string, optional): the x-axis label.
-            y_label (string, optional): the y-axis label.
-            aspect (number, optional): The aspect ratio of the axes
-                area; 1 makes circles shown as circles, values >=1
-                turn circles into ellipses wider than high, and values
-                <=1 turn circles into ellipses higher than wide.
+            aspect (number): The aspect ratio of the axes area; 1
+                makes circles shown as circles, values >=1 turn
+                circles into ellipses wider than high, and values <=1
+                turn circles into ellipses higher than wide.
             style (dict): graphics parameter values to override the
                 canvas settings, setting the line thickness and color.
                 The parameters in `style` are also used as the default
@@ -222,7 +231,6 @@ class Canvas:
         x_labels = zip(xt, label_fn(xt))
         y_labels = zip(yt, label_fn(yt))
         ascent, descent, _, _, _ = self.ctx.font_extents()
-        x_tick_bottom = rect[1] - tick_length - x_label_dist - ascent + descent
         self.ctx.restore()
 
         s2 = {
@@ -248,7 +256,7 @@ class Canvas:
             self.ctx.set_font_matrix(
                 cairo.Matrix(tick_font_size, 0, 0, -tick_font_size, 0, 0))
             for x_pos, x_lab in x_labels:
-                # TODO(voss): use some method of `axes` to do this
+                # TODO(voss): use some method of `Axes` to do this
                 x_pos = rect[0] + (x_pos - xa[0]) * w / (xa[1] - xa[0])
                 ext = self.ctx.text_extents(x_lab)
                 self.ctx.move_to(x_pos, rect[1] - tick_length)
@@ -257,7 +265,7 @@ class Canvas:
                                  rect[1] - tick_length - x_label_dist - ascent)
                 self.ctx.show_text(x_lab)
             for y_pos, y_lab in y_labels:
-                # TODO(voss): use some method of `axes` to do this
+                # TODO(voss): use some method of `Axes` to do this
                 y_pos = rect[1] + (y_pos - ya[0]) * h / (ya[1] - ya[0])
                 ext = self.ctx.text_extents(y_lab)
                 self.ctx.move_to(rect[0] - tick_length, y_pos)
@@ -268,7 +276,7 @@ class Canvas:
             self.ctx.stroke()
 
             self.ctx.restore()
-        self._on_close.append(decorate)
+        self.on_close.append(decorate)
 
         return axes
 
@@ -279,8 +287,8 @@ class Canvas:
         Args:
             rect (list of length 4): the location of the viewport
                 on the page.
-            x_range():
-            y_range():
+            x_range ():
+            y_range ():
             style (dict): graphics parameter values to override the
                 canvas settings.
 
@@ -298,6 +306,14 @@ class Canvas:
         return res
 
     def viewport(self, rect, x_range, y_range, *, style=None):
+        """
+        Args:
+            rect ():
+            x_range ():
+            y_range ():
+            style ():
+
+        """
         style = param.check_keys(style)
         x_range = data_range(x_range)
         y_range = data_range(y_range)
@@ -366,14 +382,14 @@ class Canvas:
                 ``x[n-1,:]``.
             y (array with ``shape=(n,)``, optional): See the
                 description of `x`.
-            x_lim (tuple): the horizontal coordinate range.
-            y_lim (tuple): the vertical coordinate range.
-            x_label (string, optional): the x-axis label.
-            y_label (string, optional): the y-axis label.
+            x_extra ():
+            y_extra ():
             aspect (number, optional): The aspect ratio of the axes
                 area; 1 makes circles shown as circles, values >=1
                 turn circles into ellipses wider than high, and values
                 <=1 turn circles into ellipses higher than wide.
+            x_lim (tuple): the horizontal coordinate range.
+            y_lim (tuple): the vertical coordinate range.
             style (dict): graphics parameter values to override the
                 canvas settings, setting the line thickness and color.
 
@@ -419,6 +435,8 @@ class Canvas:
                 histogram values will not be equal to 1 unless bins of
                 unity width are chosen; it is not a probability mass
                 function.
+            x_extra ():
+            y_extra ():
             x_lim ():
             y_lim ():
             style (dict): graphics parameter values to override the
@@ -435,47 +453,36 @@ class Canvas:
         axes.draw_histogram(hist, bin_edges, style=style)
         return axes
 
-    def add_title(self, text, *, style=None):
-        """Add a title showing the string ``text`` along the top edge of the
-        canvas.  This function reduces the height of the canvas.
+    def image(self, pixels, x_range=None, y_range=None, *, aspect=None,
+              style=None):
+        """Plot a raster image inside coordinate axes.
 
-        Args:
-            text (string): The title text to add.
-            style (dict): graphics parameter values to override the
-                canvas settings.
+        The array ``pixels`` gives the pixel intensities, as RGB
+        intensities in the range [0, 1].  The array must have the
+        shape ``pix_height x pix_width x 3``, where the last
+        coordinate indicates the colour channels in the order red,
+        green, blue.
 
-        This function uses the following graphics parameters:
-
-            - title_font_size: the font size to use to typeset the
-              title.
-
-            - title_top_margin: the size of the margin to add between
-              the bottom of the title text and the top of the
-              remaining canvas.
+        args:
+            pixels (array): the pixel intensities, in the form described
+                above.
+            x_range (tuple of length 2):
+            y_range (tuple of length 2):
+            style (dict, optional): Default plot graphics values for the
+                canvas.
 
         """
-        if self.axes is not None:
-            raise errors.WrongUsage("cannot add title once axes are present")
-
         style = param.check_keys(style)
-        font_size = self._get_param('title_font_size', style)
-        margin = self._get_param('title_top_margin', style)
 
-        self.ctx.save()
-        self.ctx.set_font_matrix(
-            cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
-        ascent, descent, _, _, _ = self.ctx.font_extents()
-        self.height -= ascent + descent + margin
-        if self.height < 0:
-            msg = "plot is not high enough to add a title"
-            raise errors.WrongUsage(msg)
-
-        ext = self.ctx.text_extents(text)
-        x_offs = max((self.width - ext[2]) / 2, 0)
-        x_offs -= ext[0]
-        self.ctx.move_to(self.x + x_offs, self.y + self.height + descent)
-        self.ctx.show_text(text)
-        self.ctx.restore()
+        pixels = np.array(pixels)
+        if x_range is None:
+            x_range = (0, pixels.shape[1])
+        if y_range is None:
+            x_range = (0, pixels.shape[0])
+        axes = self._add_axes(x_range, y_range, None, None, aspect, style)
+        axes.draw_image([x_range[0], y_range[0],
+                         x_range[1]-x_range[0], y_range[1]-y_range[0]],
+                        pixels, style=style)
 
     def get_param(self, key, style=None):
         """Get the value of graphics parameter ``key``.  If the optional
@@ -514,16 +521,15 @@ class Canvas:
         info = param.DEFAULT[key]
         if info[0] == 'width':
             return util.convert_dim(value, self.res, self.width)
-        elif info[0] == 'height':
+        if info[0] == 'height':
             return util.convert_dim(value, self.res, self.height)
-        elif info[0] == 'dim':
+        if info[0] == 'dim':
             return util.convert_dim(value, self.res)
-        elif info[0] == 'col':
+        if info[0] == 'col':
             return color.get(value)
-        elif info[0] == 'bool':
+        if info[0] == 'bool':
             return bool(value)
-        else:
-            raise NotImplementedError("parameter type '%s'" % info[0])
+        raise NotImplementedError("parameter type '%s'" % info[0])
 
     @staticmethod
     def _prepare_context(ctx):
@@ -535,11 +541,10 @@ class Axes(Canvas):
 
     def __init__(self, ctx, rect, x_range, y_range, *, res, style=None, parent=None):
         super().__init__(ctx, rect, res=res, style=style, parent=parent)
-        self.x_range = x_range
-        self.y_range = y_range
-
         x_range = data_range(x_range)
         y_range = data_range(y_range)
+        self.x_range = x_range
+        self.y_range = y_range
 
         # The horizontal scale and offset are determined by the
         # following two equations:
@@ -552,6 +557,12 @@ class Axes(Canvas):
         y_offset = self.y - y_range[0] * y_scale
         self.offset = (x_offset, y_offset)
         self.scale = (x_scale, y_scale)
+
+    def data_to_dev_x(self, x_data):
+        return self.offset[0] + x_data * self.scale[0]
+
+    def data_to_dev_y(self, y_data):
+        return self.offset[1] + y_data * self.scale[1]
 
     def draw_lines(self, x, y=None, *, style=None):
         """Draw polygonal line segments.
@@ -817,6 +828,62 @@ class Axes(Canvas):
                          self.offset[1] + y1 * self.scale[1])
         self.ctx.stroke()
         self.ctx.restore()
+
+    def draw_image(self, rect, pixels, *, style=None):
+        """Draw a raster image onto the canvas.
+
+        The array ``pixels`` gives the pixel intensities, as RGB
+        intensities in the range [0, 1].  The array must have the
+        shape ``pix_height x pix_width x 3``, where the last
+        coordinate indicates the colour channels in the order red,
+        green, blue.
+
+        args:
+            rect: A list of the form [x, y, w, h], which specifies the
+                outermost edge of the image in data coordinates.
+            pixels (array): the pixel intensities, in the form described
+                above.
+            style (dict, optional): Default plot graphics values for the
+                canvas.
+
+        """
+        style = param.check_keys(style)
+
+        pixels = np.array(pixels)
+        s = pixels.shape
+        if len(s) != 3 or s[2] != 3:
+            raise ValueError("image data must have have shape h x w x 3")
+        if np.min(pixels) < 0 or np.max(pixels) > 1:
+            raise ValueError("image intensities must be in the range [0, 1]")
+        pix_h, pix_w = s[:2]
+
+        # prepare a bytearray to hold the image data
+        buf = bytearray(pix_w * pix_h * 4)
+        sur_img = cairo.ImageSurface(cairo.FORMAT_RGB24, pix_w, pix_h, buf)
+
+        # write the image data into the bytearray
+        img = np.asarray(buf).reshape((pix_h, pix_w, 4))
+        if sys.byteorder == "little":
+            # bring the channels into ARGB order:
+            img = img[:, :, ::-1]
+        np.clip(pixels*256, 0, 255, out=img[:, :, 1:])
+
+        x0 = self.data_to_dev_x(rect[0])
+        x1 = self.data_to_dev_x(rect[0] + rect[2])
+        y0 = self.data_to_dev_x(rect[1])
+        y1 = self.data_to_dev_x(rect[1] + rect[3])
+
+        # copy the source image onto the Axes surface
+        self.ctx.save()
+        self.ctx.translate(x0, y0)
+        self.ctx.scale((x1-x0)/pix_w, (y1-y0)/pix_h)
+        self.ctx.set_source_surface(sur_img, 0, 0)
+        self.ctx.get_source().set_filter(cairo.FILTER_NEAREST)
+        self.ctx.rectangle(0, 0, pix_w, pix_h)
+        self.ctx.fill()
+
+        self.ctx.restore()
+        sur_img.finish()
 
 
 def data_range(*args):

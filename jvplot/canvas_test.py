@@ -19,7 +19,7 @@ def test_close_hooks():
     def hook():
         nonlocal seen
         seen = True
-    ax._on_close.append(hook)
+    ax.on_close.append(hook)
     pl.close()
     assert seen
 

@@ -53,7 +53,7 @@ class Plot(Canvas):
 
     """
 
-    def __init__(self, file_name, width, height, *, res=100, style={}):
+    def __init__(self, file_name, width, height, *, res=None, style={}):
         """Create a new plot."""
 
         self.file_name = file_name
@@ -68,31 +68,40 @@ class Plot(Canvas):
         else:
             raise ValueError('file name "%s" lacks an extension' % file_name)
 
-        if ext != 'png':
-            res = 72
-        w = convert_dim(width, res)
-        h = convert_dim(height, res)
+        if res is None:
+            if ext == 'png':
+                res = 100
+            else:
+                res = 72
+        if ext == 'png':
+            base_res = res
+        else:
+            base_res = 72
+        w = int(convert_dim(width, res) + 0.5)
+        h = int(convert_dim(height, res) + 0.5)
+
+        q = base_res / res
+        w_dev = int(w * q + .5)
+        h_dev = int(h * q + .5)
         if ext == 'pdf':
-            surface = cairo.PDFSurface(file_name, w, h)
+            surface = cairo.PDFSurface(file_name, w_dev, h_dev)
         elif ext == 'ps':
-            surface = cairo.PSSurface(file_name, w, h)
+            surface = cairo.PSSurface(file_name, w_dev, h_dev)
         elif ext == 'eps':
-            surface = cairo.PSSurface(file_name, w, h)
+            surface = cairo.PSSurface(file_name, w_dev, h_dev)
             surface.set_eps(True)
         elif ext == 'png':
-            w = int(w + 0.5)
-            h = int(h + 0.5)
-            surface = cairo.ImageSurface(cairo.FORMAT_RGB24, w, h)
+            surface = cairo.ImageSurface(cairo.FORMAT_RGB24, w_dev, h_dev)
         elif ext is None:
             surface = cairo.RecordingSurface(cairo.CONTENT_COLOR,
-                                             (0, 0, w, h))
+                                             (0, 0, w_dev, h_dev))
         else:
             raise ValueError('unsupported file type "%s"' % ext)
         ctx = cairo.Context(surface)
 
         # move the origin to the bottom left corner:
-        ctx.translate(0, h)
-        ctx.scale(1, -1)
+        ctx.scale(q, -q)
+        ctx.translate(0, -h)
 
         super().__init__(ctx, [0, 0, w, h], res=res, style=style)
         self.surface = surface
@@ -100,8 +109,8 @@ class Plot(Canvas):
         self.file_type = ext
 
     def __str__(self):
-        return '<JvPlot %.0fbpx%.0fbp "%s">' % (self.width, self.height,
-                                                self.file_name)
+        return '<jvplot.Plot %.0fbpx%.0fbp "%s">' % (
+            self.width, self.height, self.file_name)
 
     def close(self):
         """Close the plot and write all outstanding changes to the file.  The

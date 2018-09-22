@@ -1,24 +1,15 @@
 API design
 ----------
 
-- rename Canvas.add_title() to Canvas.title()?
+- Should canvas.Axes really be a sub-class of canvas.Canvas?
 - swap the row/column arguments of Canvas.subplot()?
-  Use a two-dimensional argument to select the supplot?
-- Rationalise use of the margin/border/padding scheme.  Should these
-  be in style?
-- Maybe split Canvas into two classes, one which only has the
-  high-level methods like plot and histogram, and one which adds all
-  the methods which require the coordinate system already to be set
-  up.
+  Or use a two-dimensional argument to select the supplot?
 - rename x_lim -> xlim and y_lim -> ylim for compatibility with R?
+- use `rect` instead of `x, y, width, height` in canvas.Canvas
 
 bug fixes
 ---------
 
-- Axes() currently ignores y_label
-- strictly obey explicitly given x_lim and y_lim values
-- Title positions look odd when axes are used.  Can this be fixed somehow?
-  Maybe add a `title` keyword argument to `Canvas.plot()` or similar?
 - if the right/top-most tick label does not fit within the padding,
   move the label inwards a bit.
 - autogenerate doc-strings for configuration parameters
@@ -28,6 +19,7 @@ bug fixes
 enhancements
 ------------
 
+- add a new command to plot "bands"
 - implement logarithmic axes
 - add more unit tests for `axis._try_pairs`
 - add support for custom tick label formats, e.g. for dates
@@ -38,10 +30,6 @@ enhancements
 - Relative font sizes can be easily implemented using the
   parent_height argument of param.get().  But what are the font sizes
   relative to?
-- Use a complicated clip region to preserve the inward halfs of the
-  axis ticks?  Or provide a function to redraw the tick labels?  Or
-  draw tick labels in the destructor?
 - Should histograms have padding-bottom = 0?
 - Should the box centers or the box boundaries be labelled in histograms?
 - Choose a nicer style for the sphinx HTML output.
-- add a new command to plot "bands"
