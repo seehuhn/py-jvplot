@@ -15,6 +15,7 @@ bug fixes
 - autogenerate doc-strings for configuration parameters
 - axis tick labels should use the same number of digits throughout,
   not 0.38, 0.385, 0.39.
+- pixel-align the axis box (and maybe the labels?)
 
 enhancements
 ------------

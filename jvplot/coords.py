@@ -182,7 +182,7 @@ def ranges_and_ticks(w, h, x_scale, y_scale, label_width, label_height,
 
         best_p = np.inf
         for y_range, y_ticks in y_scale.try_single():
-            pp = y_scale.penalties(w, y_range, y_ticks, label_height(y_ticks),
+            pp = y_scale.penalties(h, y_range, y_ticks, label_height(y_ticks),
                                    label_sep, best_tick_dist)
             p = np.sum(pp)
             if p < best_p:
@@ -196,9 +196,9 @@ def ranges_and_ticks(w, h, x_scale, y_scale, label_width, label_height,
                                    label_sep, best_tick_dist)
             px = np.sum(pp)
 
-            l = (x_range[1] - x_range[0]) * aspect * w / h
+            l = (x_range[1] - x_range[0]) * aspect / w * h
             for y_range, y_ticks in y_scale.try_single(length=l):
-                pp = y_scale.penalties(w, y_range, y_ticks, label_height(y_ticks),
+                pp = y_scale.penalties(h, y_range, y_ticks, label_height(y_ticks),
                                        label_sep, best_tick_dist)
                 py = np.sum(pp)
 
@@ -211,11 +211,11 @@ def ranges_and_ticks(w, h, x_scale, y_scale, label_width, label_height,
                     best_y_ticks = y_ticks
 
         for y_range, y_ticks in y_scale.try_single():
-            pp = y_scale.penalties(w, y_range, y_ticks, label_height(y_ticks),
+            pp = y_scale.penalties(h, y_range, y_ticks, label_height(y_ticks),
                                    label_sep, best_tick_dist)
             py = np.sum(pp)
 
-            l = (y_range[1] - y_range[0]) / aspect / w * h
+            l = (y_range[1] - y_range[0]) / aspect / h * w
             for x_range, x_ticks in x_scale.try_single(length=l):
                 pp = x_scale.penalties(w, x_range, x_ticks, label_width(x_ticks),
                                        label_sep, best_tick_dist)

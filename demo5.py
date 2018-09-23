@@ -4,7 +4,7 @@ import numpy as np
 
 from jvplot import Plot
 
-with Plot('demo5.pdf', '4.5in', '4.5in') as pl:
+with Plot('demo5.png', '4.5in', '4.5in') as pl:
     ax = pl.viewport([pl.x, pl.y, pl.width, pl.height], (0, 1), (0, 1))
 
     w = 10

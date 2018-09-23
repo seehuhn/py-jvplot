@@ -100,6 +100,27 @@ def test_smallest_scale_larger_than():
         z = coords._scale_length(k-1)
         assert z <= x, "%f (tick %d) <= %f failed" % (z, k-1, x)
 
+def test_tall_axes():
+    # make the y-axis much taller than the x-axis
+    ax_x = coords.Linear((0, 10))
+    ax_y = coords.Linear((0, 8))
+    w = 118.49244249201104
+    h = 346.0514976101213
+    def width_fn(ticks):
+        labels = ["%g" % xi for xi in ticks]
+        return [7.695 * len(label) for label in labels]
+    def height_fn(ticks):
+        return [13.837 for _ in ticks]
+    label_sep = 8.302200083022
+    opt_spacing = 78.74015748031495
+    aspect = 1
+    print("---")
+    xa, xt, ya, yt = coords.ranges_and_ticks(
+        w, h, ax_x, ax_y, width_fn, height_fn,
+        label_sep, opt_spacing, aspect=aspect)
+    print("---")
+    # assert that the longer axis has more labels
+    assert len(yt) > len(xt)
 
 class CoordsPenaltyTestCase(unittest.TestCase):
 

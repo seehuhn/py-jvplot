@@ -75,6 +75,11 @@ def test_canvas_param():
         # mis-spelled 'font_size'
         c1.get_param('font_size', style={'font.size': '10px'})
 
+def test_plot_aspect():
+    with plot.Plot("/dev/null", 3, 5) as pl:
+        ax = pl.plot([1, 2, 3], [1, -1, 1], aspect=1)
+        nose.tools.assert_almost_equal(ax.scale[0], ax.scale[1])
+
 def test_data_range():
     with nose.tools.assert_raises(ValueError):
         canvas.data_range()

@@ -256,8 +256,7 @@ class Canvas:
             self.ctx.set_font_matrix(
                 cairo.Matrix(tick_font_size, 0, 0, -tick_font_size, 0, 0))
             for x_pos, x_lab in x_labels:
-                # TODO(voss): use some method of `Axes` to do this
-                x_pos = rect[0] + (x_pos - xa[0]) * w / (xa[1] - xa[0])
+                x_pos = axes.data_to_dev_x(x_pos)
                 ext = self.ctx.text_extents(x_lab)
                 self.ctx.move_to(x_pos, rect[1] - tick_length)
                 self.ctx.line_to(x_pos, rect[1] + tick_length)
@@ -265,8 +264,7 @@ class Canvas:
                                  rect[1] - tick_length - x_label_dist - ascent)
                 self.ctx.show_text(x_lab)
             for y_pos, y_lab in y_labels:
-                # TODO(voss): use some method of `Axes` to do this
-                y_pos = rect[1] + (y_pos - ya[0]) * h / (ya[1] - ya[0])
+                y_pos = axes.data_to_dev_y(y_pos)
                 ext = self.ctx.text_extents(y_lab)
                 self.ctx.move_to(rect[0] - tick_length, y_pos)
                 self.ctx.line_to(rect[0] + tick_length, y_pos)
@@ -478,11 +476,12 @@ class Canvas:
         if x_range is None:
             x_range = (0, pixels.shape[1])
         if y_range is None:
-            x_range = (0, pixels.shape[0])
+            y_range = (0, pixels.shape[0])
         axes = self._add_axes(x_range, y_range, None, None, aspect, style)
         axes.draw_image([x_range[0], y_range[0],
                          x_range[1]-x_range[0], y_range[1]-y_range[0]],
                         pixels, style=style)
+        return axes
 
     def get_param(self, key, style=None):
         """Get the value of graphics parameter ``key``.  If the optional
@@ -870,8 +869,8 @@ class Axes(Canvas):
 
         x0 = self.data_to_dev_x(rect[0])
         x1 = self.data_to_dev_x(rect[0] + rect[2])
-        y0 = self.data_to_dev_x(rect[1])
-        y1 = self.data_to_dev_x(rect[1] + rect[3])
+        y0 = self.data_to_dev_y(rect[1])
+        y1 = self.data_to_dev_y(rect[1] + rect[3])
 
         # copy the source image onto the Axes surface
         self.ctx.save()
