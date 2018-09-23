@@ -4,7 +4,6 @@ API design
 - swap the row/column arguments of Canvas.subplot()?
   Or use a two-dimensional argument to select the subplot?
 - rename x_lim -> xlim and y_lim -> ylim for compatibility with R?
-- make plotting of border, ticks and tick labels optional
 - replace `viewport` with a new function to draw an empty set
   of axes
 
@@ -19,6 +18,8 @@ bug fixes
 - pixel-align the axis box (and maybe the tick marks?)
 - use `draw_text` or a similar function to draw all labels.
 - use "*-padding-*" style parameters instead of `_spread()`
+- when layouting decided so snap one edge to 0, don't have
+  the label for 0 right at the edge of the box
 
 enhancements
 ------------
@@ -26,9 +27,7 @@ enhancements
 - add a new command to plot "bands"
 - implement logarithmic axes
 - add support for custom tick label formats, e.g. for dates
-- add support for axis labels
 - implement minor axis ticks
-- add support for raster images
 - implement units 'em' and 'en'
 - Relative font sizes can be easily implemented using the
   parent_height argument of param.get().  But what are the font sizes

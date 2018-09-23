@@ -19,6 +19,8 @@ rgba_pattern_ = re.compile(r'rgba\(' + d_ + ',' + d_ + ',' + d_ + ','
                            + d_ + r'\)$')
 del d_
 
+TRANSPARENT = (1.0, 1.0, 1.0, 0.0)
+
 # color names from the XKCD color list http://xkcd.com/color/rgb.txt
 names = {
     'cloudy blue': (172, 194, 217),
@@ -976,7 +978,7 @@ names = {
 def get(col):
     r = -1
     if col is None or col == "transparent":
-        r, g, b, a = (1.0, 1.0, 1.0, 0.0)
+        r, g, b, a = TRANSPARENT
     elif col.startswith('#'):
         if len(col) == 1 + 6:
             r = int(col[1:3], 16) / 255

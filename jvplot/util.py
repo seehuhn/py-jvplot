@@ -95,6 +95,8 @@ def _check_num_vec(v, n, broadcast=False):
 
 def _check_coords(x, y):
     x = np.array(x)
+    if not x.shape:
+        x = x.reshape((1,))
     if y is None:
         shape = x.shape
         if len(shape) == 1:
@@ -105,6 +107,8 @@ def _check_coords(x, y):
             raise ValueError('x has wrong shape %s' % shape)
     else:
         y = np.array(y)
+        if not y.shape:
+            y = y.reshape((1,))
     if len(x.shape) != 1:
         raise ValueError('x has wrong shape %s' % repr(x.shape))
     if len(y.shape) != 1:

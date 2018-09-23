@@ -163,7 +163,7 @@ class Linear:
 
         d_axis = axis_range[1] - axis_range[0]
         d_data = self.data_range[1] - self.data_range[0]
-        p3 = abs(math.log2(d_axis / d_data))
+        p3 = 2 * abs(math.log2(d_axis / d_data))
 
         return [p0, p1, p2, p3]
 

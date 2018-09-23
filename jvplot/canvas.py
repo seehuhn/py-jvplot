@@ -119,6 +119,64 @@ class Device:
         style = param.check_keys(style)
         return self._get_param(key, style)
 
+    def _draw_text(self, text, x, y, font_size, col, bg,
+                   horizontal_align, vertical_align, rotate, padding):
+        padding = util._check_vec(padding, 4, True)
+        p_top = util.convert_dim(padding[0], self.res, self.rect[3])
+        p_right = util.convert_dim(padding[1], self.res, self.rect[2])
+        p_bottom = util.convert_dim(padding[2], self.res, self.rect[3])
+        p_left = util.convert_dim(padding[3], self.res, self.rect[2])
+
+        self.ctx.save()
+        self.ctx.set_font_matrix(
+            cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
+
+        ext = self.ctx.text_extents(text)
+        if horizontal_align == "start":
+            x_offs = 0
+        elif horizontal_align == "end":
+            x_offs = -ext[4]
+        elif horizontal_align == "left":
+            x_offs = -ext[0]
+        elif horizontal_align == "right":
+            x_offs = -ext[0] - ext[2]
+        elif horizontal_align == "center":
+            x_offs = -ext[0] - .5 * ext[2]
+        else:
+            x_offs = param.convert_dim(horizontal_align, self.res, ext[2])
+        ascent, descent, line_height, _, _ = self.ctx.font_extents()
+        if vertical_align == "baseline":
+            y_offs = 0
+        elif vertical_align == "top":
+            y_offs = -ascent
+        elif vertical_align == "bottom":
+            y_offs = descent
+        elif vertical_align == "center":
+            y_offs = (descent - ascent) / 2
+        else:
+            y_offs = param.convert_dim(vertical_align, self.res, line_height)
+
+        if bg is not None and bg[4] > 0:
+            self.ctx.save()
+            self.ctx.set_source_rgba(*bg)
+            self.ctx.move_to(x, y)
+            self.ctx.rotate(rotate)
+            self.ctx.rel_move_to(ext[0] + x_offs - p_left,
+                                 ext[1] + y_offs - p_bottom)
+            self.ctx.rel_line_to(ext[2] + p_left + p_right, 0)
+            self.ctx.rel_line_to(0, ext[3] + p_bottom + p_top)
+            self.ctx.rel_line_to(- ext[2] - p_right - p_left, 0)
+            self.ctx.close_path()
+            self.ctx.fill()
+            self.ctx.restore()
+
+        self.ctx.set_source_rgba(*col)
+        self.ctx.move_to(x, y)
+        self.ctx.rotate(rotate)
+        self.ctx.rel_move_to(x_offs, y_offs)
+        self.ctx.show_text(text)
+        self.ctx.restore()
+
 
 class Canvas(Device):
     """Representation of a page which a plot can be drawn on.
@@ -225,115 +283,10 @@ class Canvas(Device):
         axes.draw_lines(x, y)
         return axes
 
-    def _add_axes(self, x_range, y_range, x_lim, y_lim, aspect, style):
-        """Draw a set of coordinate axes and return a new canvas representing
-        the data area inside the axes.
-
-        Args:
-            x_range ():
-            y_range ():
-            x_lim (tuple): the horizontal coordinate range.
-            y_lim (tuple): the vertical coordinate range.
-            aspect (number): The aspect ratio of the axes area; 1
-                makes circles shown as circles, values >=1 turn
-                circles into ellipses wider than high, and values <=1
-                turn circles into ellipses higher than wide.
-            style (dict): graphics parameter values to override the
-                canvas settings, setting the line thickness and color.
-                The parameters in `style` are also used as the default
-                parameters for the context representing the axes area.
-
-        """
-        margin_bottom = self._get_param('axis_margin_bottom', style)
-        margin_left = self._get_param('axis_margin_left', style)
-        margin_top = self._get_param('axis_margin_top', style)
-        margin_right = self._get_param('axis_margin_right', style)
-        border = self._get_param('axis_border', style)
-        x = self.rect[0] + margin_left + border
-        y = self.rect[1] + margin_bottom + border
-        w = self.rect[2] - margin_left - margin_right - 2*border
-        h = self.rect[3] - margin_bottom - margin_top - 2*border
-        if w < 0 or h < 0:
-            raise ValueError("not enough space, margins too large")
-        rect = [x, y, w, h]
-
-        # axis graphics parameters
-        tick_width = self._get_param('axis_tick_width', style)
-        tick_length = self._get_param('axis_tick_length', style)
-        x_label_dist = self._get_param('axis_x_label_dist', style)
-        y_label_dist = self._get_param('axis_y_label_dist', style)
-        tick_font_size = self._get_param('axis_font_size', style)
-
-        # layout parameters
-        opt_spacing = self._get_param('axis_tick_opt_spacing', style)
-        label_sep = self._get_param('axis_label_sep', style)
-
-        # temporarily switch to tick label font to find the best layout
-        self.ctx.save()
-        self.ctx.set_font_matrix(
-            cairo.Matrix(tick_font_size, 0, 0, -tick_font_size, 0, 0))
-
-        label_fn = lambda x: ["%g" % xi for xi in x]
-        def width_fn(ticks):
-            labels = label_fn(ticks)
-            return [self.ctx.text_extents(lab)[4] for lab in labels]
-        def height_fn(ticks):
-            font_extents = self.ctx.font_extents()
-            return [font_extents[2] for x in ticks]
-        ax_x = coords.Linear(x_range, lim=x_lim)
-        ax_y = coords.Linear(y_range, lim=y_lim)
-        xa, xt, ya, yt = coords.ranges_and_ticks(
-            w, h, ax_x, ax_y, width_fn, height_fn,
-            label_sep, opt_spacing, aspect=aspect)
-
-        x_labels = zip(xt, label_fn(xt))
-        y_labels = zip(yt, label_fn(yt))
-        ascent, descent, _, _, _ = self.ctx.font_extents()
-        self.ctx.restore()
-
-        s2 = {
-            'padding_bottom': 0,
-            'padding_left': 0,
-            'padding_right': 0,
-            'padding_top': 0,
-        }
-        s2.update(style)
-        style = param.check_keys(s2)
-        axes = self._viewport(rect, xa, ya, style)
-
-        def decorate():
-            self.ctx.save()
-            if border > 0:
-                self.ctx.rectangle(*rect)
-                self.ctx.set_line_width(border)
-                self.ctx.set_line_join(cairo.LINE_JOIN_MITER)
-                self.ctx.stroke()
-
-            self.ctx.set_line_cap(cairo.LINE_CAP_BUTT)
-            self.ctx.set_line_width(tick_width)
-            self.ctx.set_font_matrix(
-                cairo.Matrix(tick_font_size, 0, 0, -tick_font_size, 0, 0))
-            for x_pos, x_lab in x_labels:
-                x_pos = axes.data_to_dev_x(x_pos)
-                ext = self.ctx.text_extents(x_lab)
-                self.ctx.move_to(x_pos, rect[1] - tick_length)
-                self.ctx.line_to(x_pos, rect[1] + tick_length)
-                self.ctx.move_to(x_pos - .5*ext[4],
-                                 rect[1] - tick_length - x_label_dist - ascent)
-                self.ctx.show_text(x_lab)
-            for y_pos, y_lab in y_labels:
-                y_pos = axes.data_to_dev_y(y_pos)
-                ext = self.ctx.text_extents(y_lab)
-                self.ctx.move_to(rect[0] - tick_length, y_pos)
-                self.ctx.line_to(rect[0] + tick_length, y_pos)
-                self.ctx.move_to(rect[0] - tick_length - y_label_dist - ext[4],
-                                 y_pos - .5*(ascent - descent))
-                self.ctx.show_text(y_lab)
-            self.ctx.stroke()
-
-            self.ctx.restore()
-        self._on_close.append(decorate)
-
+    def axes(self, x_range, y_range, *,
+             aspect=None, x_lim=None, y_lim=None, style=None):
+        style = param.check_keys(style)
+        axes = self._add_axes(x_range, y_range, x_lim, y_lim, aspect, style)
         return axes
 
     def _viewport(self, rect, x_range, y_range, style):
@@ -459,6 +412,80 @@ class Canvas(Device):
         axes.draw_points(x, y)
         return axes
 
+    def pair_scatter_plot(self, z, *, names=None, upper_fn=None, diag_fn=None,
+                          lower_fn=None, style=None):
+        style = param.check_keys(style)
+
+        z = np.array(z)
+        if len(z.shape) != 2:
+            raise ValueError("need two-dimensional data for a pair plot")
+        _, p = z.shape
+        if p > min(self.rect[2], self.rect[3]) / 36:
+            raise ValueError("too many variables, plot area too small")
+        mar_bottom = self._get_param('axis_margin_bottom', style)
+        mar_left = self._get_param('axis_margin_left', style)
+        mar_top = self._get_param('axis_margin_top', style)
+        mar_right = self._get_param('axis_margin_right', style)
+        mar_between = self._get_param('axis_margin_between', style)
+
+        # self.rect[2] = mar_left + p*w + (p-1)*mar_between + mar_right
+        w = (self.rect[2] - mar_left - (p-1)*mar_between - mar_right) / p
+        # self.rect[3] = mar_bottom + p*h + (p-1)*mar_between + mar_top
+        h = (self.rect[3] - mar_bottom - (p-1)*mar_between - mar_top) / p
+        if w < 18 or h < 18:
+            raise ValueError("margins too large, not enough space")
+
+        ranges = [_spread(data_range(z[:, i])) for i in range(p)]
+        if names is None:
+            names = [None] * p
+        elif len(names) != p:
+            return ValueError(f"names must be alist of length {p}")
+
+        rows = []
+        for i in range(p):      # rows from bottom to top
+            y = self.rect[1] + mar_bottom + i * (h + mar_between)
+
+            row = []
+            for j in range(p):  # colums from left to right
+                if i > j:
+                    fn = upper_fn
+                elif i < j:
+                    fn = lower_fn
+                else:
+                    fn = diag_fn
+
+                x = self.rect[0] + mar_left + j * (w + mar_between)
+                rect = [x, y, w, h]
+                if fn == "blank":
+                    ax = None
+                else:
+                    i_first = 0
+                    if lower_fn == "blank":
+                        i_first = j
+                        if diag_fn == "blank":
+                            i_first = j+1
+                    j_first = 0
+                    if upper_fn == "blank":
+                        j_first = i
+                        if diag_fn == "blank":
+                            j_first = i+1
+                    x_lab = names[j] if i == i_first else None
+                    y_lab = names[i] if j == j_first else None
+                    ax = self._add_axes2(rect,
+                                         ranges[j], ranges[i], None, None,
+                                         None, style,
+                                         show_x_labels=(i == i_first),
+                                         show_y_labels=(j == j_first),
+                                         x_lab=x_lab,
+                                         y_lab=y_lab)
+                    if fn is None:
+                        ax.draw_points(z[:, j], z[:, i])
+                    else:
+                        fn(ax, i, j)
+                row.append(ax)
+            rows.append(row)
+        return np.array(rows)
+
     def histogram(self, x, *, bins=10, range=None, weights=None, density=False,
                   x_extra=None, y_extra=None, x_lim=None, y_lim=None,
                   style=None):
@@ -539,6 +566,143 @@ class Canvas(Device):
         axes.draw_image([x_range[0], y_range[0],
                          x_range[1]-x_range[0], y_range[1]-y_range[0]],
                         pixels, style=style)
+        return axes
+
+    def _add_axes(self, x_range, y_range, x_lim, y_lim, aspect, style):
+        """Draw a set of coordinate axes and return a new canvas representing
+        the data area inside the axes.
+
+        Args:
+            x_range ():
+            y_range ():
+            x_lim (tuple): the horizontal coordinate range.
+            y_lim (tuple): the vertical coordinate range.
+            aspect (number): The aspect ratio of the axes area; 1
+                makes circles shown as circles, values >=1 turn
+                circles into ellipses wider than high, and values <=1
+                turn circles into ellipses higher than wide.
+            style (dict): graphics parameter values to override the
+                canvas settings, setting the line thickness and color.
+                The parameters in `style` are also used as the default
+                parameters for the context representing the axes area.
+
+        """
+        margin_bottom = self._get_param('axis_margin_bottom', style)
+        margin_left = self._get_param('axis_margin_left', style)
+        margin_top = self._get_param('axis_margin_top', style)
+        margin_right = self._get_param('axis_margin_right', style)
+        border = self._get_param('axis_border', style)
+        x = self.rect[0] + margin_left + border
+        y = self.rect[1] + margin_bottom + border
+        w = self.rect[2] - margin_left - margin_right - 2*border
+        h = self.rect[3] - margin_bottom - margin_top - 2*border
+        if w < 0 or h < 0:
+            raise ValueError("not enough space, margins too large")
+        return self._add_axes2([x, y, w, h], x_range, y_range, x_lim, y_lim,
+                               aspect, style)
+
+    def _add_axes2(self, rect, x_range, y_range, x_lim, y_lim,
+                   aspect, style, *, x_lab=None, y_lab=None,
+                   show_x_labels=True, show_y_labels=True):
+        x, y, w, h = rect
+
+        # axis graphics parameters
+        tick_width = self._get_param('axis_tick_width', style)
+        tick_length = self._get_param('axis_tick_length', style)
+        x_label_dist = self._get_param('axis_x_label_dist', style)
+        y_label_dist = self._get_param('axis_y_label_dist', style)
+        tick_font_size = self._get_param('tick_font_size', style)
+        label_font_size = self._get_param('label_font_size', style)
+        label_font_col = self._get_param('label_font_col', style)
+        border = self._get_param('axis_border', style)
+
+        # layout parameters
+        opt_spacing = self._get_param('axis_tick_opt_spacing', style)
+        label_sep = self._get_param('axis_label_sep', style)
+
+        # Temporarily switch the font, so we can determine label
+        # dimensions:
+        self.ctx.save()
+        self.ctx.set_font_matrix(
+            cairo.Matrix(tick_font_size, 0, 0, -tick_font_size, 0, 0))
+
+        label_fn = lambda x: ["%g" % xi for xi in x]
+        def width_fn(ticks):
+            labels = label_fn(ticks)
+            return [self.ctx.text_extents(lab)[4] for lab in labels]
+        def height_fn(ticks):
+            font_extents = self.ctx.font_extents()
+            return [font_extents[2] for x in ticks]
+        ax_x = coords.Linear(x_range, lim=x_lim)
+        ax_y = coords.Linear(y_range, lim=y_lim)
+
+        xa, xt, ya, yt = coords.ranges_and_ticks(
+            w, h, ax_x, ax_y, width_fn, height_fn,
+            label_sep, opt_spacing, aspect=aspect)
+
+        x_labels = zip(xt, label_fn(xt))
+        y_labels = zip(yt, label_fn(yt))
+        ascent, descent, _, _, _ = self.ctx.font_extents()
+        self.ctx.restore()
+
+        s2 = {
+            'padding_bottom': 0,
+            'padding_left': 0,
+            'padding_right': 0,
+            'padding_top': 0,
+        }
+        s2.update(style)
+        style = param.check_keys(s2)
+        axes = self._viewport(rect, xa, ya, style)
+
+        def decorate():
+            self.ctx.save()
+            if border > 0:
+                self.ctx.rectangle(*rect)
+                self.ctx.set_line_width(border)
+                self.ctx.set_line_join(cairo.LINE_JOIN_MITER)
+                self.ctx.stroke()
+
+            self.ctx.set_line_cap(cairo.LINE_CAP_BUTT)
+            self.ctx.set_line_width(tick_width)
+            self.ctx.set_font_matrix(
+                cairo.Matrix(tick_font_size, 0, 0, -tick_font_size, 0, 0))
+            for x_pos, x_tlab in x_labels:
+                x_pos = axes.data_to_dev_x(x_pos)
+                ext = self.ctx.text_extents(x_tlab)
+                self.ctx.move_to(x_pos, rect[1] - tick_length)
+                self.ctx.line_to(x_pos, rect[1] + tick_length)
+                if show_x_labels:
+                    self.ctx.move_to(x_pos - .5*ext[4],
+                                     rect[1] - tick_length - x_label_dist - ascent)
+                    self.ctx.show_text(x_tlab)
+            for y_pos, y_tlab in y_labels:
+                y_pos = axes.data_to_dev_y(y_pos)
+                ext = self.ctx.text_extents(y_tlab)
+                self.ctx.move_to(rect[0] - tick_length, y_pos)
+                self.ctx.line_to(rect[0] + tick_length, y_pos)
+                if show_y_labels:
+                    self.ctx.move_to(rect[0] - tick_length - y_label_dist - ext[4],
+                                     y_pos - .5*(ascent - descent))
+                    self.ctx.show_text(y_tlab)
+            self.ctx.stroke()
+            self.ctx.restore()
+
+            if x_lab:
+                self._draw_text(x_lab,
+                                rect[0] + .5 * rect[2],
+                                rect[1] - tick_length - 2 * x_label_dist - (ascent+descent),
+                                label_font_size, label_font_col, None,
+                                "center", "top", 0, ["1pt", "3pt"])
+            if y_lab:
+                self._draw_text(y_lab,
+                                rect[0] - tick_length - 2 * y_label_dist - 3*(ascent+descent),
+                                rect[1] + .5 * rect[3],
+                                label_font_size, label_font_col, None,
+                                "center", "top", np.pi/2, ["1pt", "3pt"])
+
+        self._on_close.append(decorate)
+
         return axes
 
 
@@ -684,61 +848,8 @@ class Axes(Device):
         if rotate_deg is not None:
             rotate = float(rotate_deg) / 180 * np.pi
 
-        padding = util._check_vec(padding, 4, True)
-        p_top = util.convert_dim(padding[0], self.res, self.rect[3])
-        p_right = util.convert_dim(padding[1], self.res, self.rect[2])
-        p_bottom = util.convert_dim(padding[2], self.res, self.rect[3])
-        p_left = util.convert_dim(padding[3], self.res, self.rect[2])
-
-        self.ctx.save()
-        self.ctx.set_font_matrix(
-            cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
-
-        ext = self.ctx.text_extents(text)
-        if horizontal_align == "start":
-            x_offs = 0
-        elif horizontal_align == "end":
-            x_offs = -ext[4]
-        elif horizontal_align == "left":
-            x_offs = -ext[0]
-        elif horizontal_align == "right":
-            x_offs = -ext[0] - ext[2]
-        elif horizontal_align == "center":
-            x_offs = -ext[0] - .5 * ext[2]
-        else:
-            x_offs = param.convert_dim(horizontal_align, self.res, ext[2])
-        ascent, descent, line_height, _, _ = self.ctx.font_extents()
-        if vertical_align == "baseline":
-            y_offs = 0
-        elif vertical_align == "top":
-            y_offs = -ascent
-        elif vertical_align == "bottom":
-            y_offs = descent
-        elif vertical_align == "center":
-            y_offs = (descent - ascent) / 2
-        else:
-            y_offs = param.convert_dim(vertical_align, self.res, line_height)
-
-        if bg is not None:
-            self.ctx.save()
-            self.ctx.set_source_rgba(*bg)
-            self.ctx.move_to(x, y)
-            self.ctx.rotate(rotate)
-            self.ctx.rel_move_to(ext[0] + x_offs - p_left,
-                                 ext[1] + y_offs - p_bottom)
-            self.ctx.rel_line_to(ext[2] + p_left + p_right, 0)
-            self.ctx.rel_line_to(0, ext[3] + p_bottom + p_top)
-            self.ctx.rel_line_to(- ext[2] - p_right - p_left, 0)
-            self.ctx.close_path()
-            self.ctx.fill()
-            self.ctx.restore()
-
-        self.ctx.set_source_rgba(*col)
-        self.ctx.move_to(x, y)
-        self.ctx.rotate(rotate)
-        self.ctx.rel_move_to(x_offs, y_offs)
-        self.ctx.show_text(text)
-        self.ctx.restore()
+        self._draw_text(text, x, y, font_size, col, bg,
+                        horizontal_align, vertical_align, rotate, padding)
 
     def draw_histogram(self, hist, bin_edges, *, style=None):
         """
@@ -873,10 +984,16 @@ class Axes(Device):
             img = img[:, :, ::-1]
         np.clip(pixels*256, 0, 255, out=img[:, :, 1:])
 
-        x0 = self.data_to_dev_x(rect[0])
-        x1 = self.data_to_dev_x(rect[0] + rect[2])
-        y0 = self.data_to_dev_y(rect[1])
-        y1 = self.data_to_dev_y(rect[1] + rect[3])
+        if rect is not None:
+            x0 = self.data_to_dev_x(rect[0])
+            x1 = self.data_to_dev_x(rect[0] + rect[2])
+            y0 = self.data_to_dev_y(rect[1])
+            y1 = self.data_to_dev_y(rect[1] + rect[3])
+        else:
+            x0 = self.rect[0]
+            x1 = self.rect[0] + self.rect[2]
+            y0 = self.rect[1]
+            y1 = self.rect[1] + self.rect[3]
 
         # copy the source image onto the Axes surface
         self.ctx.save()

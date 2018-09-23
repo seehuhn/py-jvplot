@@ -197,4 +197,4 @@ class CoordsPenaltyTestCase(unittest.TestCase):
         p = cc.penalties(self.ax.rect[3], (0, 1), [], [], 1, 1)
         nose.tools.assert_almost_equals(p[3], 0)
         p = cc.penalties(self.ax.rect[3], (0, 2), [], [], 1, 1)
-        nose.tools.assert_almost_equals(p[3], 1.0)
+        nose.tools.assert_almost_equals(p[3], 2.0)
