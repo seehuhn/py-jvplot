@@ -32,31 +32,16 @@ from . import param
 from . import util
 
 
-class Canvas:
-    """The Canvas class.  Canvas objects are normally created using
-    the :py:func:`jvplot.Plot` function.
+class Device:
 
-    Args:
-        ctx (Cairo drawing context): The Cairo context used to draw
-            the figure.
+    """A graphics device to draw a plot on.
 
-        x (number): the horizontal position of the left canvas edge on
-            the drawing context, in device coordinates.
+    This class is only used as a base class for :py:class:`Canvas` and
+    :py:class:`Axes`.  The ``Device`` class itself is not normally
+    instantiated.
 
-        y (number): the vertical position of the bottom canvas edge on
-            the drawing context, in device coordinates.
-
-        w (number): the width of the canvas in device coordinate
-            units.
-
-        h (number): the height of the canvas in device coordinate
-            units.
-
-        res (number): Resolution of the canvas, *i.e.* the number of
-            device coordinate units per inch.
-
-        style (dict, optional): Default plot graphics values for the
-            canvas.
+    This class keeps track of the resolution and dimensions of the
+    drawing area, and of the graphical style parameters.
 
     """
 
@@ -68,45 +53,110 @@ class Canvas:
         self.style = style
 
         if ctx is not None:
-            self._prepare_context(ctx)
+            ctx.set_line_join(cairo.LINE_JOIN_ROUND)
+            ctx.set_line_cap(cairo.LINE_CAP_ROUND)
         self.ctx = ctx
 
         self.res = res
-        """Resolution of the canvas, *i.e.* the number of device coordinate
-        units per inch (read only).
+        """Device resolution, *i.e.* the number of coordinate units per inch
+        (read only).
 
         """
 
-        x, y, w, h = rect
+        self.rect = rect
+        """The extent of the drawing area, in device coordinates (Read only).
 
-        self.x = x
-        """Horizontal position of this canvas on the page, in device
-        coordinate units (read only).
-
-        """
-
-        self.y = y
-        """Vertical position of this canvas on the page, in device coordinate
-        units (read only).
+        The four values `x, y, w, h = rect` represent the horizontal
+        and vertical position of the drawing area on the page, and the
+        width and hight of the drawing area, respectively.
 
         """
 
-        self.width = w
-        "Width of the canvas in device coordinate units (read only)."
+    def _get_param(self, key, style):
+        keys = [key]
+        while True:
+            value = style.get(key)
+            if value is None:
+                value = self.style.get(key)
+            if value is None:
+                msg = f"invalid style parameter '{key}'"
+                raise errors.InvalidParameterName(msg)
 
-        self.height = h
-        "Height of the canvas in device coordinate units (read only)."
+            if isinstance(value, str) and value.startswith('$'):
+                key = value[1:]
+                if key in keys:
+                    msg = ' -> '.join(keys + [key])
+                    raise errors.WrongUsage("infinite parameter loop: " + msg)
+                keys.append(key)
+            else:
+                break
 
-        self.on_close = []
-        if parent:
-            parent.on_close.append(self.close)
+        info = param.DEFAULT[key]
+        if info[0] == 'width':
+            return util.convert_dim(value, self.res, self.rect[2])
+        if info[0] == 'height':
+            return util.convert_dim(value, self.res, self.rect[3])
+        if info[0] == 'dim':
+            return util.convert_dim(value, self.res)
+        if info[0] == 'col':
+            return color.get(value)
+        if info[0] == 'bool':
+            return bool(value)
+        raise NotImplementedError("parameter type '%s'" % info[0])
+
+    def get_param(self, key, style=None):
+        """Get the value of graphics parameter ``key``.  If the optional
+        argument ``style`` is given, it must be a dictionary, mapping
+        parameter names to values; in this case, values in ``style``
+        override values set in the Canvas object.
+
+        Args:
+            key (string): the graphics parameter name to query.
+            style (dict): graphics parameter values to override the
+                canvas settings.
+
+        """
+        style = param.check_keys(style)
+        return self._get_param(key, style)
+
+
+class Canvas(Device):
+    """Representation of a page which a plot can be drawn on.
+
+    Canvas objects are normally created using the
+    :py:func:`jvplot.Plot` function.  The methods of this class
+    implement the various high-level plot types.
+
+    Args:
+        ctx (Cairo drawing context): The Cairo context used to draw
+            the figure.
+
+        rect (list of length 4): The extent of the drawing area, in
+           device coordinates.  The four values `x, y, w, h = rect`
+           represent the horizontal and vertical position of the
+           drawing area on the page, and the width and hight of the
+           drawing area, respectively.
+
+        res (number): Resolution of the device, *i.e.* the number of
+            device coordinate units per inch.
+
+        style (dict, optional): Graphics parameters to override the
+           default values.
+
+        parent (Device, optional): used internally, for graphics
+           parameters with value `"inherit"`.
+
+    """
+
+    def __init__(self, ctx, rect, *, res, style=None, parent=None):
+        super().__init__(ctx, rect, res=res, style=style, parent=parent)
 
         # draw the background, if any
         r, g, b, a = self._get_param("bg_col", style)
         if a > 0 and ctx is not None:
             ctx.save()
             ctx.set_source_rgba(r, g, b, a)
-            ctx.rectangle(x, y, w, h)
+            ctx.rectangle(*self.rect)
             ctx.fill()
             ctx.restore()
 
@@ -115,32 +165,40 @@ class Canvas:
         padding_left = self._get_param('padding_left', style)
         padding_top = self._get_param('padding_top', style)
         padding_right = self._get_param('padding_right', style)
-        self.x += padding_left
-        self.y += padding_bottom
-        self.width -= padding_left + padding_right
-        self.height -= padding_bottom + padding_top
+        self.rect[0] += padding_left
+        self.rect[1] += padding_bottom
+        self.rect[2] -= padding_left + padding_right
+        self.rect[3] -= padding_bottom + padding_top
+
+        self._on_close = []
+        if parent:
+            parent._on_close.append(self.close)
 
     def __str__(self):
         tmpl = "<Canvas %.0fx%.0f%+.0f%+.0f>"
-        return tmpl % (self.width, self.height, self.x, self.y)
+        x, y, w, h = self.rect
+        return tmpl % (w, h, x, y)
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        """Call the ``close()`` method of the canvas."""
         self.close()
 
     def close(self):
-        """Close the canvas.
+        """Close the plot.
 
-        This must be called once drawing on the canvas is completed.
-        Instead of calling this method explicitly, a context handler
-        can be used.
+        This must be called once drawing is completed, either
+        explicitly or by using the canvase as a context handler.
+
+        After the plot is closed, nothing can be added any more.
 
         """
-        while self.on_close:
-            fn = self.on_close.pop()
+        while self._on_close:
+            fn = self._on_close.pop()
             fn()
+        self.ctx = None
 
     def plot(self, x, y=None, *, x_extra=None, y_extra=None, aspect=None,
              x_lim=None, y_lim=None, style=None):
@@ -191,10 +249,10 @@ class Canvas:
         margin_top = self._get_param('axis_margin_top', style)
         margin_right = self._get_param('axis_margin_right', style)
         border = self._get_param('axis_border', style)
-        x = self.x + margin_left + border
-        y = self.y + margin_bottom + border
-        w = self.width - margin_left - margin_right - 2*border
-        h = self.height - margin_bottom - margin_top - 2*border
+        x = self.rect[0] + margin_left + border
+        y = self.rect[1] + margin_bottom + border
+        w = self.rect[2] - margin_left - margin_right - 2*border
+        h = self.rect[3] - margin_bottom - margin_top - 2*border
         if w < 0 or h < 0:
             raise ValueError("not enough space, margins too large")
         rect = [x, y, w, h]
@@ -274,7 +332,7 @@ class Canvas:
             self.ctx.stroke()
 
             self.ctx.restore()
-        self.on_close.append(decorate)
+        self._on_close.append(decorate)
 
         return axes
 
@@ -349,12 +407,12 @@ class Canvas:
         i = idx // cols
         j = idx % cols
 
-        dw = self.width / cols
-        dh = self.height / rows
-        x0 = int(self.x + j*dw + .5)
-        x1 = int(self.x + (j+1)*dw + .5)
-        y0 = int(self.y + i*dh + .5)
-        y1 = int(self.y + (i+1)*dh + .5)
+        dw = self.rect[2] / cols
+        dh = self.rect[3] / rows
+        x0 = int(self.rect[0] + j*dw + .5)
+        x1 = int(self.rect[0] + (j+1)*dw + .5)
+        y0 = int(self.rect[1] + i*dh + .5)
+        y1 = int(self.rect[1] + (i+1)*dh + .5)
         rect = [x0, y0, x1 - x0, y1 - y0]
 
         # allocate a new drawing context for the viewport
@@ -483,60 +541,8 @@ class Canvas:
                         pixels, style=style)
         return axes
 
-    def get_param(self, key, style=None):
-        """Get the value of graphics parameter ``key``.  If the optional
-        argument ``style`` is given, it must be a dictionary, mapping
-        parameter names to values; in this case, values in ``style``
-        override values set in the Canvas object.
 
-        Args:
-            key (string): the graphics parameter name to query.
-            style (dict): graphics parameter values to override the
-                canvas settings.
-
-        """
-        style = param.check_keys(style)
-        return self._get_param(key, style)
-
-    def _get_param(self, key, style):
-        keys = [key]
-        while True:
-            value = style.get(key)
-            if value is None:
-                value = self.style.get(key)
-            if value is None:
-                msg = f"invalid style parameter '{key}'"
-                raise errors.InvalidParameterName(msg)
-
-            if isinstance(value, str) and value.startswith('$'):
-                key = value[1:]
-                if key in keys:
-                    msg = ' -> '.join(keys + [key])
-                    raise errors.WrongUsage("infinite parameter loop: " + msg)
-                keys.append(key)
-            else:
-                break
-
-        info = param.DEFAULT[key]
-        if info[0] == 'width':
-            return util.convert_dim(value, self.res, self.width)
-        if info[0] == 'height':
-            return util.convert_dim(value, self.res, self.height)
-        if info[0] == 'dim':
-            return util.convert_dim(value, self.res)
-        if info[0] == 'col':
-            return color.get(value)
-        if info[0] == 'bool':
-            return bool(value)
-        raise NotImplementedError("parameter type '%s'" % info[0])
-
-    @staticmethod
-    def _prepare_context(ctx):
-        ctx.set_line_join(cairo.LINE_JOIN_ROUND)
-        ctx.set_line_cap(cairo.LINE_CAP_ROUND)
-
-
-class Axes(Canvas):
+class Axes(Device):
 
     def __init__(self, ctx, rect, x_range, y_range, *, res, style=None, parent=None):
         super().__init__(ctx, rect, res=res, style=style, parent=parent)
@@ -549,11 +555,11 @@ class Axes(Canvas):
         # following two equations:
         #     x_range[0] * x_scale + x_offset = x
         #     x_range[1] * x_scale + x_offset = x + w
-        x_scale = self.width / (x_range[1] - x_range[0])
-        x_offset = self.x - x_range[0] * x_scale
+        x_scale = self.rect[2] / (x_range[1] - x_range[0])
+        x_offset = self.rect[0] - x_range[0] * x_scale
         # The vertical coordinates are similar:
-        y_scale = self.height / (y_range[1] - y_range[0])
-        y_offset = self.y - y_range[0] * y_scale
+        y_scale = self.rect[3] / (y_range[1] - y_range[0])
+        y_offset = self.rect[1] - y_range[0] * y_scale
         self.offset = (x_offset, y_offset)
         self.scale = (x_scale, y_scale)
 
@@ -679,10 +685,10 @@ class Axes(Canvas):
             rotate = float(rotate_deg) / 180 * np.pi
 
         padding = util._check_vec(padding, 4, True)
-        p_top = util.convert_dim(padding[0], self.res, self.height)
-        p_right = util.convert_dim(padding[1], self.res, self.width)
-        p_bottom = util.convert_dim(padding[2], self.res, self.height)
-        p_left = util.convert_dim(padding[3], self.res, self.width)
+        p_top = util.convert_dim(padding[0], self.res, self.rect[3])
+        p_right = util.convert_dim(padding[1], self.res, self.rect[2])
+        p_bottom = util.convert_dim(padding[2], self.res, self.rect[3])
+        p_left = util.convert_dim(padding[3], self.res, self.rect[2])
 
         self.ctx.save()
         self.ctx.set_font_matrix(

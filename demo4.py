@@ -12,7 +12,7 @@ style = {
     'axis_margin_right': '1cm',
 }
 with Plot('demo4.pdf', '4.5in', '4.5in', style=style) as pl:
-    ax = pl.viewport([0, 0, pl.width, pl.height], (0, 1), (0, 1))
+    ax = pl.viewport(pl.rect, (0, 1), (0, 1))
     coords = [
         [ 0.1, 0.1 ],
         [ 0.1, 0.9 ],

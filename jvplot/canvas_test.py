@@ -12,17 +12,6 @@ from . import plot
 from . import util
 
 
-def test_close_hooks():
-    pl = plot.Plot('/dev/null', 3, 3)
-    ax = pl.viewport([0, 0, pl.width, pl.height], (0, 1), (0, 1))
-    seen = False
-    def hook():
-        nonlocal seen
-        seen = True
-    ax.on_close.append(hook)
-    pl.close()
-    assert seen
-
 def test_canvas_param():
     res = 100
     lw = '17pt'

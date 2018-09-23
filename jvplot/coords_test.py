@@ -126,9 +126,7 @@ class CoordsPenaltyTestCase(unittest.TestCase):
 
     def setUp(self):
         self.plot = plot.Plot('/dev/null', 5, 3)
-        self.ax = self.plot.viewport([self.plot.x, self.plot.y,
-                                      self.plot.width, self.plot.height],
-                                     (0, 1), (0, 3))
+        self.ax = self.plot.viewport(self.plot.rect, (0, 1), (0, 3))
 
     def tearDown(self):
         self.plot.close()
@@ -145,18 +143,18 @@ class CoordsPenaltyTestCase(unittest.TestCase):
         cc = coords.Linear((0, 1))
 
         ticks = [0, width]
-        p = cc.penalties(self.ax.width, (0, 1), ticks, widths, 0.0, 1.0)
+        p = cc.penalties(self.ax.rect[2], (0, 1), ticks, widths, 0.0, 1.0)
 
         ticks = [0, 2*width]
-        p = cc.penalties(self.ax.width, (0, 1), ticks, widths, 0.0, 1.0)
+        p = cc.penalties(self.ax.rect[2], (0, 1), ticks, widths, 0.0, 1.0)
         nose.tools.assert_almost_equals(p[0], 0)
 
         ticks = [0, .5*width]
-        p = cc.penalties(self.ax.width, (0, 1), ticks, widths, 0.0, 1.0)
+        p = cc.penalties(self.ax.rect[2], (0, 1), ticks, widths, 0.0, 1.0)
         nose.tools.assert_almost_equals(p[0], 1 + .5)
 
         ticks = [0, width]
-        p = cc.penalties(self.ax.width, (0, 1), ticks, widths, h_ext[4], 1.0)
+        p = cc.penalties(self.ax.rect[2], (0, 1), ticks, widths, h_ext[4], 1.0)
         nose.tools.assert_almost_equals(p[0], 1 + .5)
 
         # vertical axis
@@ -167,23 +165,23 @@ class CoordsPenaltyTestCase(unittest.TestCase):
         cc = coords.Linear((0, 3))
 
         ticks = [0, height]
-        p = cc.penalties(self.ax.height, (0, 3), ticks, heights, 0.0, 1.0)
+        p = cc.penalties(self.ax.rect[3], (0, 3), ticks, heights, 0.0, 1.0)
         nose.tools.assert_almost_equals(p[0], 0)
 
         ticks = [0, 2*height]
-        p = cc.penalties(self.ax.height, (0, 3), ticks, heights, 0.0, 1.0)
+        p = cc.penalties(self.ax.rect[3], (0, 3), ticks, heights, 0.0, 1.0)
         nose.tools.assert_almost_equals(p[0], 0)
 
         ticks = [0, .5*height]
-        p = cc.penalties(self.ax.height, (0, 3), ticks, heights, 0.0, 1.0)
+        p = cc.penalties(self.ax.rect[3], (0, 3), ticks, heights, 0.0, 1.0)
         nose.tools.assert_almost_equals(p[0], 1 + .5)
 
         ticks = [0, height]
-        p = cc.penalties(self.ax.height, (0, 3), ticks, heights, v_ext[2], 1.0)
+        p = cc.penalties(self.ax.rect[3], (0, 3), ticks, heights, v_ext[2], 1.0)
         nose.tools.assert_almost_equals(p[0], 1 + .5)
 
         # no labels
-        p = cc.penalties(self.ax.height, (0, 3), ticks, None, v_ext[2], 1.0)
+        p = cc.penalties(self.ax.rect[3], (0, 3), ticks, None, v_ext[2], 1.0)
         nose.tools.assert_almost_equals(p[0], 0)
 
     def test_p1(self):
@@ -196,7 +194,7 @@ class CoordsPenaltyTestCase(unittest.TestCase):
 
     def test_p3(self):
         cc = coords.Linear((0, 1))
-        p = cc.penalties(self.ax.height, (0, 1), [], [], 1, 1)
+        p = cc.penalties(self.ax.rect[3], (0, 1), [], [], 1, 1)
         nose.tools.assert_almost_equals(p[3], 0)
-        p = cc.penalties(self.ax.height, (0, 2), [], [], 1, 1)
+        p = cc.penalties(self.ax.rect[3], (0, 2), [], [], 1, 1)
         nose.tools.assert_almost_equals(p[3], 1.0)
