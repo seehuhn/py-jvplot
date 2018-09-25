@@ -259,7 +259,7 @@ class Canvas(Device):
         self.ctx = None
 
     def plot(self, x, y=None, *, x_extra=None, y_extra=None, aspect=None,
-             x_lim=None, y_lim=None, style=None):
+             x_lim=None, y_lim=None, x_lab=None, y_lab=None, style=None):
         """Draw a line plot.
 
         Args:
@@ -279,14 +279,16 @@ class Canvas(Device):
 
         x_range = _spread(data_range(x, x_extra))
         y_range = _spread(data_range(y, y_extra))
-        axes = self._add_axes(x_range, y_range, x_lim, y_lim, aspect, style)
+        axes = self._add_axes(x_range, y_range, x_lim, y_lim, aspect, style,
+                              x_lab=x_lab, y_lab=y_lab)
         axes.draw_lines(x, y)
         return axes
 
-    def axes(self, x_range, y_range, *,
-             aspect=None, x_lim=None, y_lim=None, style=None):
+    def axes(self, x_range, y_range, *, aspect=None, x_lim=None, y_lim=None,
+             x_lab=None, y_lab=None, style=None):
         style = param.check_keys(style)
-        axes = self._add_axes(x_range, y_range, x_lim, y_lim, aspect, style)
+        axes = self._add_axes(x_range, y_range, x_lim, y_lim, aspect, style,
+                              x_lab=x_lab, y_lab=y_lab)
         return axes
 
     def _viewport(self, rect, x_range, y_range, style):
@@ -537,7 +539,7 @@ class Canvas(Device):
         return axes
 
     def image(self, pixels, x_range=None, y_range=None, *, aspect=None,
-              style=None):
+              x_lab=None, y_lab=None, style=None):
         """Plot a raster image inside coordinate axes.
 
         The array ``pixels`` gives the pixel intensities, as RGB
@@ -562,13 +564,13 @@ class Canvas(Device):
             x_range = (0, pixels.shape[1])
         if y_range is None:
             y_range = (0, pixels.shape[0])
-        axes = self._add_axes(x_range, y_range, None, None, aspect, style)
-        axes.draw_image([x_range[0], y_range[0],
-                         x_range[1]-x_range[0], y_range[1]-y_range[0]],
-                        pixels, style=style)
+        axes = self._add_axes(x_range, y_range, None, None, aspect, style,
+                              x_lab=x_lab, y_lab=y_lab)
+        axes.draw_image(None, pixels, style=style)
         return axes
 
-    def _add_axes(self, x_range, y_range, x_lim, y_lim, aspect, style):
+    def _add_axes(self, x_range, y_range, x_lim, y_lim, aspect, style, *,
+                  x_lab=None, y_lab=None):
         """Draw a set of coordinate axes and return a new canvas representing
         the data area inside the axes.
 
@@ -599,7 +601,7 @@ class Canvas(Device):
         if w < 0 or h < 0:
             raise ValueError("not enough space, margins too large")
         return self._add_axes2([x, y, w, h], x_range, y_range, x_lim, y_lim,
-                               aspect, style)
+                               aspect, style, x_lab=x_lab, y_lab=y_lab)
 
     def _add_axes2(self, rect, x_range, y_range, x_lim, y_lim,
                    aspect, style, *, x_lab=None, y_lab=None,
@@ -965,6 +967,13 @@ class Axes(Device):
         """
         style = param.check_keys(style)
 
+        if rect is None:
+            rect = [
+                self.x_range[0],
+                self.y_range[0],
+                self.x_range[1]-self.x_range[0],
+                self.y_range[1]-self.y_range[0],
+            ]
         pixels = np.array(pixels)
         s = pixels.shape
         if len(s) != 3 or s[2] != 3:

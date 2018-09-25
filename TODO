@@ -6,6 +6,9 @@ API design
 - rename x_lim -> xlim and y_lim -> ylim for compatibility with R?
 - replace `viewport` with a new function to draw an empty set
   of axes
+- don't use `rect` for data coordinates.  Use x_range and y_range
+  instead.
+- swap the arguments of `draw_image`
 
 bug fixes
 ---------
@@ -42,3 +45,5 @@ enhancements
 - make it easy to label the lines created by `draw_affine()`
 - add support for different line styles
 - add support for embedded figure legends
+- if values are integers, prefer integer-valued labels
+- add a function to draw color bars

@@ -49,9 +49,9 @@ DEFAULT = {
     'padding_top': ('height', '$padding', 'viewport top padding'),
     'plot_col': ('col', '$line_col', 'plot line color'),
     'plot_lw': ('dim', '$lw', 'line width for plots'),
-    'plot_point_col': ('col', '$line_col', 'point color for scatter plots'),
+    'plot_point_col': ('col', 'inherit', 'point color for scatter plots'),
     'plot_point_separate': ('bool', False, 'whether to draw points in a scatter plot individually'),
-    'plot_point_size': ('dim', '2pt', 'point size for scatter plots'),
+    'plot_point_size': ('dim', 'inherit', 'point size for scatter plots'),
     'text_bg': ('col', 'rgba(255,255,255,.8)', 'text background color'),
     'text_col': ('col', 'black', 'text color'),
     'text_font_size': ('dim', '$font_size', 'text font size'),
@@ -64,6 +64,8 @@ VALID_KEYS = set(DEFAULT.keys())
 
 ROOT = {
     'bg_col': 'white',
+    'plot_point_col': '$line_col',
+    'plot_point_size': '2pt',
 }
 
 def check_keys(style):
