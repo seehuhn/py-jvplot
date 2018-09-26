@@ -140,8 +140,8 @@ class Canvas(device.Device):
         style = param.check_keys(style)
         x, y = util._check_coords(x, y)
 
-        x_range = _spread(util.data_range(x, x_extra))
-        y_range = _spread(util.data_range(y, y_extra))
+        x_range = util.data_range(x, x_extra)
+        y_range = util.data_range(y, y_extra)
         rect = rect or self.get_margin_rect(style=style)
         ax = self._add_axes(rect, x_range, y_range, x_lim, y_lim, aspect, style,
                             x_lab=x_lab, y_lab=y_lab)
@@ -177,8 +177,8 @@ class Canvas(device.Device):
         style = param.check_keys(style)
         x, y = util._check_coords(x, y)
 
-        x_range = _spread(util.data_range(x, x_extra))
-        y_range = _spread(util.data_range(y, y_extra))
+        x_range = util.data_range(x, x_extra)
+        y_range = util.data_range(y, y_extra)
         rect = rect or self.get_margin_rect(style=style)
         ax = self._add_axes(rect, x_range, y_range, x_lim, y_lim, aspect, style)
         ax.draw_points(x, y)
@@ -207,7 +207,7 @@ class Canvas(device.Device):
         if w < 18 or h < 18:
             raise ValueError("margins too large, not enough space")
 
-        ranges = [_spread(util.data_range(z[:, i])) for i in range(p)]
+        ranges = [util.data_range(z[:, i]) for i in range(p)]
         if names is None:
             names = [None] * p
         elif len(names) != p:
@@ -322,8 +322,8 @@ class Canvas(device.Device):
         hist, bin_edges = np.histogram(x, bins=bins, range=range,
                                        weights=weights, density=density)
 
-        x_range = _spread(util.data_range(bin_edges, x_extra))
-        y_range = _spread(util.data_range(hist, y_extra))
+        x_range = util.data_range(bin_edges, x_extra)
+        y_range = util.data_range(hist, y_extra)
         rect = rect or self.get_margin_rect(style=style)
         ax = self._add_axes(rect, x_range, y_range, x_lim, y_lim, None, style)
         ax.draw_histogram(hist, bin_edges, style=style)
@@ -433,35 +433,56 @@ class Canvas(device.Device):
 
     def _add_axes(self, rect, x_range, y_range, x_lim, y_lim,
                   aspect, style, *, x_lab=None, y_lab=None):
-        _, _, w, h = rect
+        assert x_range or x_lim
+        assert y_range or y_lim
 
-        # axis graphics parameters
-        x_label_dist = self._get_param('tick_label_dist_x', style)
-        y_label_dist = self._get_param('tick_label_dist_y', style)
+        padding_bottom = self._get_param('padding_bottom', style)
+        padding_left = self._get_param('padding_left', style)
+        padding_top = self._get_param('padding_top', style)
+        padding_right = self._get_param('padding_right', style)
         tick_font_size = self._get_param('tick_font_size', style)
-        label_font_size = self._get_param('label_font_size', style)
-        label_font_col = self._get_param('label_font_col', style)
-
-        # layout parameters
         opt_spacing = self._get_param('axis_tick_opt_spacing', style)
-        label_sep = self._get_param('tick_label_sep', style)
 
-        label_fn = lambda x: ["%g" % xi for xi in x]
-        def width_fn(ticks):
-            labels = label_fn(ticks)
-            return [self.text_width(lab, tick_font_size) for lab in labels]
-        def height_fn(ticks):
-            fh = self.font_height(tick_font_size)
-            return [fh for x in ticks]
-        x_range = x_range or x_lim
-        y_range = y_range or y_lim
-        ax_x = coords.Linear(x_range, lim=x_lim)
-        ax_y = coords.Linear(y_range, lim=y_lim)
+        get_width = lambda lab: self.text_width(lab, tick_font_size)
+        get_height = lambda lab: self.font_height(tick_font_size)
 
-        xa, xt, ya, yt = coords.ranges_and_ticks(
-            w, h, ax_x, ax_y, width_fn, height_fn,
-            label_sep, opt_spacing, aspect=aspect)
+        _, _, w, h = rect
+        w -= padding_left + padding_right
+        h -= padding_bottom + padding_top
+        if w <= 0 or h <= 0:
+            raise ValueError("padding too large, not enough space")
+        x_penalties = coords.AxisPenalties(w, data_range=x_range,
+                                           label_width_fn=get_width,
+                                           dev_tick_dist=opt_spacing)
+        y_penalties = coords.AxisPenalties(h, data_range=y_range,
+                                           label_width_fn=get_height,
+                                           dev_tick_dist=opt_spacing)
+        x_sff = coords.LinScaleFactoryFactory()
+        y_sff = coords.LinScaleFactoryFactory(pad=True)
 
+        if aspect is None:
+            _, xa, xt = coords.find_best(x_sff, x_penalties, axis_lim=x_lim)
+            _, ya, yt = coords.find_best(y_sff, y_penalties, axis_lim=y_lim)
+        else:
+            if x_lim and y_lim:
+                raise ValueError("cannot set aspect, x_lim and y_lim together")
+            xx = x_lim if x_lim else x_range
+            x_unit_length = w / (xx[1] - xx[0])
+            yy = y_lim if y_lim else y_range
+            y_unit_length = h / (yy[1] - yy[0])
+            if x_lim or (x_unit_length <= aspect * y_unit_length and not y_lim):
+                _, xa, xt = coords.find_best(x_sff, x_penalties, axis_lim=x_lim)
+                y_len = h / w * (xa[1] - xa[0]) * aspect
+                _, ya, yt = coords.find_best(y_sff, y_penalties, axis_len=y_len)
+            else:
+                _, ya, yt = coords.find_best(y_sff, y_penalties, axis_lim=y_lim)
+                x_len = w / h * (ya[1] - ya[0]) / aspect
+                _, xa, xt = coords.find_best(x_sff, x_penalties, axis_len=x_len)
+
+        qx = (xa[1] - xa[0]) / w
+        qy = (ya[1] - ya[0]) / h
+        xa = (xa[0] - padding_left * qx, xa[1] + padding_right * qx)
+        ya = (ya[0] - padding_bottom * qy, ya[1] + padding_top * qy)
         ax = axes.Axes(self, rect, xa, ya, style=style)
 
         style = style.copy()
@@ -469,18 +490,19 @@ class Canvas(device.Device):
             x_label_dist = self._get_param('axis_label_dist_x', style)
             y_label_dist = self._get_param('axis_label_dist_y', style)
             ticks = self._get_param('axis_ticks', style)
+            label_font_size = self._get_param('label_font_size', style)
+            label_font_col = self._get_param('label_font_col', style)
 
             ax.decorate()
-
             for pos in 'bt':
                 if pos not in ticks.lower():
                     continue
-                x_labels = label_fn(xt) if pos.upper() in ticks else None
+                x_labels = x_sff.labels(xt) if pos.upper() in ticks else None
                 ax._draw_ticks(xt, x_labels, pos, style)
             for pos in 'lr':
                 if pos not in ticks.lower():
                     continue
-                y_labels = label_fn(yt) if pos.upper() in ticks else None
+                y_labels = y_sff.labels(yt) if pos.upper() in ticks else None
                 ax._draw_ticks(yt, y_labels, pos, style)
 
             if x_lab:
@@ -499,8 +521,3 @@ class Canvas(device.Device):
         self._on_close.append(decorate)
 
         return ax
-
-def _spread(rnge, f=0.05):
-    a, b = rnge
-    margin = f * (b - a)
-    return a - margin, b + margin

@@ -60,9 +60,8 @@ DEFAULT = {
     'tick_font_col': ('col', '$text_col', 'color for tick labels'),
     'tick_font_size': ('dim', '$font_size', 'font size for tick labels'),
     'tick_label_dist': ('dim', '3pt', 'distance between tick labels and tick marks'),
-    'tick_label_dist_x': ('dim', '$tick_label_dist', 'vertical distance between tick labels and marks on the x-axis'),
-    'tick_label_dist_y': ('dim', '$tick_label_dist', 'horizontal distance between tick labels and marks on the y-axis'),
-    'tick_label_sep': ('dim', '6pt', 'minimum separation of tick labels'),
+    'tick_label_dist_x': ('dim', '$tick_label_dist', 'vertical distance between tick labels and marks, for the x-axis'),
+    'tick_label_dist_y': ('dim', '$tick_label_dist', 'horizontal distance between tick labels and marks, for the y-axis'),
     'title_font_size': ('dim', '$font_size', 'font size for titles'),
     'title_top_margin': ('dim', '2mm', 'distance of title to top edge of canvas'),
 }

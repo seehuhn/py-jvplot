@@ -4,7 +4,7 @@ API design
 - swap the row/column arguments of Canvas.subplot()?
   Or use a two-dimensional argument to select the subplot?
 - don't use `rect` for data coordinates.  Use x_lim and y_lim
-  instead.
+  instead (e.g. in `Axes.draw_image()`).
 - swap the arguments of `draw_image`
 - rationalize the parameter names.  For example, does the "plot" in
   "plot_point_col" make sense?
@@ -14,28 +14,20 @@ API design
 bug fixes
 ---------
 
-- autogenerate doc-strings for configuration parameters
-- Maybe axis tick labels should use the same number of digits
-  throughout, not 0.38, 0.385, 0.39?
 - pixel-align the axis box (and maybe the tick marks?)
-- use "*-padding-*" style parameters instead of `_spread()`
-- when layouting decided so snap one edge to 0, don't have
-  the label for 0 right at the edge of the box
-- introduce a penalty when the distance between the outermost tick
-  and the tick edge is too long
 
 enhancements
 ------------
 
 - add a new command to plot "bands"
 - implement logarithmic axes
-- add support for custom tick label formats, e.g. for dates
+- add support for custom tick label formats, e.g. for dates.
+  In "demo2.py" use multiples of pi for the x-axis labels.
 - implement minor axis ticks
 - implement units 'em' and 'en'
 - Relative font sizes can be easily implemented using the
   parent_height argument of param.get().  But what are the font sizes
   relative to?
-- Should histograms have padding-bottom = 0?
 - Should the box centers or the box boundaries be labelled in histograms?
 - Choose a nicer style for the sphinx HTML output.
 - implement box plots
@@ -46,5 +38,6 @@ enhancements
 - if values are integers, prefer integer-valued labels
 - add a function to draw color bars
 - allow to draw several lines in one call to `draw_affine`
-- in "demo2.py" use multiples of pi for the x-axis labels
 - can we get away with only keeping the changed keys in `param.update`?
+- autogenerate doc-strings for configuration parameters
+- add support for images with 1 or 4 channels

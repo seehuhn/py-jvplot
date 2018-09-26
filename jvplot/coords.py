@@ -16,223 +16,221 @@ import math
 import numpy as np
 
 
-class Linear:
+class LinScaleFactoryFactory:
+
+    def __init__(self, pad=False):
+        self.pad = pad
+
+    def __call__(self, width):
+        base = _smallest_scale_larger_than(width)
+        return LinScaleFactory(base)
+
+    def labels(self, ticks):
+        ll = ["%g"%x for x in ticks]
+        if all("e" not in l for l in ll) and any("." in l for l in ll):
+            parts = []
+            for l in ll:
+                s = l.split(".")
+                if len(s) < 2:
+                    s = (s[0], '0')
+                parts.append(s)
+            max_digits = max(len(b) for _, b in parts)
+            ll = []
+            for a, b in parts:
+                b = b.ljust(max_digits, '0')
+                ll.append(a + '.' + b)
+        if self.pad:
+            max_len = max(len(l) for l in ll)
+            ll = [l.rjust(max_len) for l in ll]
+        return ll
+
+class LinScaleFactory:
+
+    def __init__(self, base):
+        self.base = base
+
+    def __call__(self, level):
+        spacing = _scale_length(self.base - level)
+        return LinScale(spacing)
+
+class LinScale:
+
+    def __init__(self, spacing):
+        self.spacing = spacing
+
+    def __call__(self, i):
+        return i * self.spacing
+
+    def ceil(self, x):
+        return math.ceil(x / self.spacing)
+
+    def floor(self, x):
+        return math.floor(x / self.spacing)
+
+
+def ticks_inside(sff, a, b, max_ticks=20):
+    """A generator for axis tick suggestions.
+
+    This produces lists of proposed tick label positions inside the
+    interval [a, b].
 
     """
 
-    :Arguments:
+    factory = sff(b - a)
+    level = 1
+    while True:
+        scale = factory(level)
+        i0 = scale.ceil(a)
+        i1 = scale.floor(b)
+        ticks = [scale(i) for i in range(i0, i1+1)]
+        if len(ticks) > max_ticks:
+            break
+        if len(ticks) >= 2:
+            yield (a, b), ticks
+        level += 1
 
-        data_range
-            The data range to display, in data coordinates.
+def ticks_over(sff, a, b, max_ticks=20):
+    """A generator for axis tick suggestions.
+
+    This produces lists of proposed tick label positions which cover
+    the interval [a, b].
+
     """
 
-    def __init__(self, data_range, lim=None):
+    factory = sff(b - a)
+    level = 0
+    while True:
+        scale = factory(level)
+        i0 = scale.floor(a)
+        i1 = scale.ceil(b)
+        ticks = [scale(i) for i in range(i0, i1+1)]
+        if len(ticks) > max_ticks:
+            break
+        if len(ticks) >= 2:
+            yield (ticks[0], ticks[-1]), ticks
+        level += 1
+
+def ticks_over_bounded(sff, a, b, max_length, max_ticks=20):
+    """A generator for axis tick suggestions.
+
+    This produces lists of proposed tick label positions which cover
+    the interval [a, b], but where the ticks can be contained in an
+    interval of length max_length.
+
+    """
+
+    factory = sff(max_length)
+    level = 1
+    while True:
+        scale = factory(level)
+        i0 = scale.floor(a)
+        i1 = scale.ceil(b)
+        while True:
+            if a - scale(i0) < scale(i1) - b:
+                j0, j1 = i0 - 1, i1
+            else:
+                j0, j1 = i0, i1 + 1
+            if scale(j1 - j0) > max_length:
+                break
+            i0, i1 = j0, j1
+        ticks = [scale(i) for i in range(i0, i1+1)]
+        if len(ticks) > max_ticks:
+            break
+        if len(ticks) > 2 and scale(i1 - i0) <= max_length:
+            d = (max_length - ticks[-1] + ticks[0]) / 2
+            yield (ticks[0]-d, ticks[-1]+d), ticks
+        level += 1
+
+
+class AxisPenalties:
+
+    """Args:
+
+    label_penalty_fn (optional): A function to check whether the
+        labels overlap.  The function is called with three arguments:
+        the device width, the tick locations in the range [0,
+        device_width] (all in device coordinates), and the label
+        strings.  It must return a positive value where 0 indicates
+        perfect layout, larger values indicate worse layouts, and
+        unacceptable layouts correspond to values greater than 1.
+
+    """
+
+    def __init__(self, dev_width, *, data_range=None, label_width_fn=None,
+                 dev_tick_dist=None):
+        self.dev_width = dev_width
         self.data_range = data_range
-        self.lim = lim
+        self.label_width_fn = label_width_fn
+        self.dev_tick_dist = dev_tick_dist
 
-    def __str__(self):
-        if self.lim:
-            return f"<coords.Linear {self.lim[0]}-{self.lim[1]} fixed>"
-        return f"<coords.Linear {self.data_range[0]}-{self.data_range[1]}>"
+    def __call__(self, axis_range, ticks, labels):
+        a, b = axis_range
+        assert a <= ticks[0] < ticks[-1] <= b
+        scale = self.dev_width / (b - a)
 
-    def try_single(self, *, length=None):
-        """Generate a selection of plausible axis tick placements.  This
-        generator yields 2-tuples containing the suggested axis limits and
-        tick label positions.
+        pp = []
 
-        """
-        if self.lim is not None:
-            a, b = self.lim
-            if length is not None and abs((b - a) / length - 1) > 1e-3:
-                return
+        # make sure the labels don't overlap
+        if labels and self.label_width_fn:
+            sep = self.label_width_fn("xx")
+            xx = np.array([(x-a)*scale for x in ticks])
+            ww = np.array([self.label_width_fn(l) for l in labels])
+            l = xx - .5*ww
+            r = xx + .5*ww
+            dev_overlap = np.maximum(r[:-1] - l[1:] + sep, 0)
+            p0 = np.sum(np.square(dev_overlap*2/sep))
+            dev_outlap = np.maximum([-l[0], r[-1]-self.dev_width], 0)
+            p1 = np.mean(np.square(dev_outlap/sep))
+            pp.append(p0 + p1)
 
-            k0 = _smallest_scale_larger_than(b - a)
-            for k in range(k0 - 5, k0):
-                spacing = _scale_length(k)
-                i0 = math.ceil(a / spacing)
-                i1 = math.floor(b / spacing)
-                ticks = [k * spacing for k in range(i0, i1+1)]
-                if len(ticks) > 1:
-                    yield self.lim, ticks
-        elif length is not None:
-            a, b = self.data_range
-            if b - a > length:
-                return
-            k0 = _smallest_scale_larger_than(length)
-            for k in range(k0 - 5, k0):
-                spacing = _scale_length(k)
-
-                if 0 <= a and b <= length:
-                    i0 = 0
-                    i1 = math.floor(length / spacing)
-                    a = 0
-                    b = i1 * spacing
-                elif -length <= a and b <= 0:
-                    i0 = -math.floor(length / spacing)
-                    i1 = 0
-                    a = i0 * spacing
-                    b = 0
-                else:
-                    i0 = math.ceil(a / spacing)
-                    i1 = math.floor(b / spacing)
-                    while True:
-                        if i1 * spacing - b < a - i0 * spacing:
-                            if (i1+1) * spacing - a > length:
-                                break
-                            i1 += 1
-                            b = i1 * spacing
-                        else:
-                            if b - (i0-1)*spacing > length:
-                                break
-                            i0 -= 1
-                            a = i0 * spacing
-                assert a <= i0*spacing <= i1*spacing <= b
-                d = length - (b - a)
-                if d > 0:
-                    a -= d / 2
-                    b += d / 2
-                ticks = [k * spacing for k in range(i0, i1+1)]
-                if len(ticks) > 1:
-                    yield (a, b), ticks
-        else:
-            a, b = self.data_range
-            k0 = _smallest_scale_larger_than(b - a)
-            for k in range(k0 - 4, k0 + 1):
-                spacing = _scale_length(k)
-                i0 = math.floor(a / spacing)
-                i1 = math.ceil(b / spacing)
-                ticks = [k * spacing for k in range(i0, i1+1)]
-                yield (i0*spacing, i1*spacing), ticks
-                if len(ticks) > 2:
-                    yield (a, i1*spacing), ticks[1:]
-                    yield (i0*spacing, b), ticks[:-1]
-                if len(ticks) > 3:
-                    yield (a, b), ticks[1:-1]
-
-
-    def penalties(self, width, axis_range, ticks, label_width, label_sep, best_tick_dist):
-        """Compute the 4 penalty values for a given axis tick configuration.
-
-        :Arguments:
-
-        width
-            The total axis width in device coordinate units.
-        axis_range
-            The axis range, in data coordinates.  This typically comes
-            from output of the try_single() method.
-        ticks
-            List of tick locations in data coordinates, in increasing
-            order.  This typically comes from output of the
-            try_single() method.
-        label_width
-            The width/height of labels, in device coordinates.  This
-            can be either ``None`` (for no labels) or a list of
-            numeric widths.  In the latter case, ``labels`` and ``ticks``
-            must have the same length.
-        label_sep
-            The minimal allowed distance between labels, in device
-            coordinate units.
-        best_tick_dist
-            The optimal distance between axis ticks, in device coordinate
-            units.
-
-        """
-        scale = width / (axis_range[1] - axis_range[0])
-
-        p0 = 0.0
-        if label_width is not None:
-            for i in range(1, len(label_width)):
-                dev_length = .5 * (label_width[i-1] + label_width[i]) + label_sep
-                data_length = dev_length / scale
-                space = ticks[i] - ticks[i-1]
-                overlap = data_length - space
-                if overlap > 0:
-                    p0 += 1 + overlap / data_length
-
-        p1 = 0.0
-        if len(ticks) > 1:
+        # check that tick distances are close to the specified value
+        if self.dev_tick_dist is not None:
             mean_dist = np.mean(np.array(ticks[1:]) - np.array(ticks[:-1]))
-            p1 = abs(math.log(mean_dist * scale / best_tick_dist))
+            dev_dist = mean_dist * scale
+            pp.append(abs(math.log(dev_dist / self.dev_tick_dist, 5)))
 
-        p2 = 0.0
-        if len(ticks) > 1:
-            q_left = axis_range[0] / (ticks[1] - ticks[0])
-            p2 += (math.ceil(q_left) - q_left)**2
-            q_right = axis_range[1] / (ticks[-1] - ticks[-2])
-            p2 += (q_right - math.floor(q_right))**2
+        # make sure the ticks cover most of the axis range
+        l = (ticks[0] - a) / (b - a)
+        pp.append((4*l)**2)
+        r = (b - ticks[-1]) / (b - a)
+        pp.append((4*r)**2)
 
-        d_axis = axis_range[1] - axis_range[0]
-        d_data = self.data_range[1] - self.data_range[0]
-        p3 = 2 * abs(math.log2(d_axis / d_data))
+        # make sure the data has enough space
+        if self.data_range is not None:
+            d_data = self.data_range[1] - self.data_range[0]
+            d_axis = b - a
+            pp.append(abs(math.log2(d_axis / d_data)))
 
-        return [p0, p1, p2, p3]
+        return np.sum(np.square(pp))
 
-def ranges_and_ticks(w, h, x_scale, y_scale, label_width, label_height,
-                     label_sep, best_tick_dist, *, aspect=None):
-    if aspect is None:
-        best_p = np.inf
-        for x_range, x_ticks in x_scale.try_single():
-            pp = x_scale.penalties(w, x_range, x_ticks, label_width(x_ticks),
-                                   label_sep, best_tick_dist)
-            p = np.sum(pp)
-            if p < best_p:
-                best_p = p
-                best_x_range = x_range
-                best_x_ticks = x_ticks
-
-        best_p = np.inf
-        for y_range, y_ticks in y_scale.try_single():
-            pp = y_scale.penalties(h, y_range, y_ticks, label_height(y_ticks),
-                                   label_sep, best_tick_dist)
-            p = np.sum(pp)
-            if p < best_p:
-                best_p = p
-                best_y_range = y_range
-                best_y_ticks = y_ticks
+def find_best(sff, penalties, *, axis_lim=None, axis_len=None):
+    data_range = penalties.data_range
+    if axis_lim is not None:
+        assert axis_len is None
+        pick = ticks_inside(sff, axis_lim[0], axis_lim[1])
+    elif axis_len is not None:
+        assert data_range is not None
+        pick = ticks_over_bounded(sff, data_range[0], data_range[1], axis_len)
     else:
-        best_p = np.inf
-        for x_range, x_ticks in x_scale.try_single():
-            pp = x_scale.penalties(w, x_range, x_ticks, label_width(x_ticks),
-                                   label_sep, best_tick_dist)
-            px = np.sum(pp)
+        assert data_range is not None
+        pick = ticks_over(sff, data_range[0], data_range[1])
 
-            l = (x_range[1] - x_range[0]) * aspect / w * h
-            for y_range, y_ticks in y_scale.try_single(length=l):
-                pp = y_scale.penalties(h, y_range, y_ticks, label_height(y_ticks),
-                                       label_sep, best_tick_dist)
-                py = np.sum(pp)
+    best_penalty = np.infty
+    best_axis_range = None
+    best_ticks = None
+    for axis_range, ticks in pick:
+        labels = sff.labels(ticks)
+        p = penalties(axis_range, ticks, labels)
+        if p < best_penalty:
+            best_penalty = p
+            best_axis_range = axis_range
+            best_ticks = ticks
 
-                p = px + py
-                if p < best_p:
-                    best_p = p
-                    best_x_range = x_range
-                    best_x_ticks = x_ticks
-                    best_y_range = y_range
-                    best_y_ticks = y_ticks
-
-        for y_range, y_ticks in y_scale.try_single():
-            pp = y_scale.penalties(h, y_range, y_ticks, label_height(y_ticks),
-                                   label_sep, best_tick_dist)
-            py = np.sum(pp)
-
-            l = (y_range[1] - y_range[0]) / aspect / h * w
-            for x_range, x_ticks in x_scale.try_single(length=l):
-                pp = x_scale.penalties(w, x_range, x_ticks, label_width(x_ticks),
-                                       label_sep, best_tick_dist)
-                px = np.sum(pp)
-
-                p = px + py
-                if p < best_p:
-                    best_p = p
-                    best_x_range = x_range
-                    best_x_ticks = x_ticks
-                    best_y_range = y_range
-                    best_y_ticks = y_ticks
-
-    return best_x_range, best_x_ticks, best_y_range, best_y_ticks
+    return best_penalty, best_axis_range, best_ticks
 
 
 def _scale_length(k):
+
     """Get the scale length k.
 
     Scale lengths are indexed by integers k, and are ..., 0.1, 0.2,
