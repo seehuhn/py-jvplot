@@ -16,32 +16,34 @@ from . import errors
 # name: (type, default value, description)
 DEFAULT = {
     'affine_line_col': ('col', '$line_col', 'line color for straight lines'),
-    'affine_lw': ('dim', '$lw', 'line width for straight lines'),
-    'axis_border': ('dim', '$lw_thick', 'axis line width'),
-    'axis_label_dist': ('dim', '3pt', 'distance between tick labels and tick marks'),
-    'axis_label_sep': ('dim', '6pt', 'minimum separation of axis labels'),
-    'axis_margin_between': ('dim', '2mm', 'margin between axis boxes'),
-    'axis_margin_bottom': ('height', '10mm', 'axis bottom margin'),
-    'axis_margin_left': ('width', '14mm', 'axis left margin'),
-    'axis_margin_right': ('width', '2mm', 'axis right margin'),
-    'axis_margin_top': ('height', '2mm', 'axis top margin'),
-    'axis_tick_length': ('dim', '3pt', 'length of axis tick marks'),
+    'affine_lw': ('dim', '$lw_thin', 'line width for straight lines'),
+    'axis_border': ('dim', 'inherit', 'axis line width'),
+    'axis_font_col': ('col', 'inherit', 'color for axis labels'),
+    'axis_font_size': ('dim', 'inherit', 'font size for axis labels'),
+    'axis_label_dist_x': ('height', 'inherit', 'vertical distance of axis labels from x-axis'),
+    'axis_label_dist_y': ('width', 'inherit', 'horizontal distance of axis labels from y-axis'),
+    'axis_tick_length': ('dim', 'inherit', 'length of axis tick marks'),
     'axis_tick_opt_spacing': ('dim', '2cm', 'optimal spacing for axis tick marks'),
-    'axis_tick_width': ('dim', '$lw_medium', 'line width for axis tick marks'),
-    'axis_x_label_dist': ('dim', '$axis_label_dist', 'vertical distance between tick labels and marks on the x-axis'),
-    'axis_y_label_dist': ('dim', '$axis_label_dist', 'horizontal distance between tick labels and marks on the y-axis'),
+    'axis_tick_width': ('dim', 'inherit', 'line width for axis tick marks'),
+    'axis_ticks': ('str', 'inherit', 'positions of axis ticks and tick labels'),
     'bg_col': ('col', 'transparent', 'background color'),
     'font_size': ('dim', '10pt', 'font size'),
     'hist_col': ('col', '$line_col', 'line color for histogram boxes'),
     'hist_fill_col': ('col', '#CCC', 'fill color for histogram bars'),
     'hist_lw': ('dim', '$lw_thin', 'line width for histogram bars'),
-    'label_font_size': ('dim', '$font_size', 'font size for axis labels'),
     'label_font_col': ('col', '$text_col', 'color for axis labels'),
+    'label_font_size': ('dim', '$font_size', 'font size for axis labels'),
     'line_col': ('col', 'black', 'line color'),
+    'line_dash': ('dash', 'none', 'line dash pattern'),
     'lw': ('dim', '$lw_medium', 'line width'),
     'lw_medium': ('dim', '.8pt', 'width for medium thick lines'),
     'lw_thick': ('dim', '1pt', 'width for thick lines'),
     'lw_thin': ('dim', '.6pt', 'width for thin lines'),
+    'margin_between': ('dim', '2mm', 'margin between axis boxes'),
+    'margin_bottom': ('height', '10mm', 'axis bottom margin'),
+    'margin_left': ('width', '14mm', 'axis left margin'),
+    'margin_right': ('width', '2mm', 'axis right margin'),
+    'margin_top': ('height', '2mm', 'axis top margin'),
     'padding': ('dim', '2mm', 'viewport padding'),
     'padding_bottom': ('height', '$padding', 'viewport bottom padding'),
     'padding_left': ('width', '$padding', 'viewport left padding'),
@@ -55,7 +57,12 @@ DEFAULT = {
     'text_bg': ('col', 'rgba(255,255,255,.8)', 'text background color'),
     'text_col': ('col', 'black', 'text color'),
     'text_font_size': ('dim', '$font_size', 'text font size'),
+    'tick_font_col': ('col', '$text_col', 'color for tick labels'),
     'tick_font_size': ('dim', '$font_size', 'font size for tick labels'),
+    'tick_label_dist': ('dim', '3pt', 'distance between tick labels and tick marks'),
+    'tick_label_dist_x': ('dim', '$tick_label_dist', 'vertical distance between tick labels and marks on the x-axis'),
+    'tick_label_dist_y': ('dim', '$tick_label_dist', 'horizontal distance between tick labels and marks on the y-axis'),
+    'tick_label_sep': ('dim', '6pt', 'minimum separation of tick labels'),
     'title_font_size': ('dim', '$font_size', 'font size for titles'),
     'title_top_margin': ('dim', '2mm', 'distance of title to top edge of canvas'),
 }
@@ -63,6 +70,14 @@ DEFAULT = {
 VALID_KEYS = set(DEFAULT.keys())
 
 ROOT = {
+    'axis_border': '$lw_thick',
+    'axis_font_col': '$text_col',
+    'axis_font_size': '$font_size',
+    'axis_label_dist_x': '6mm',
+    'axis_label_dist_y': '10mm',
+    'axis_tick_length': '3pt',
+    'axis_tick_width': '$lw_medium',
+    'axis_ticks': 'BL',
     'bg_col': 'white',
     'plot_point_col': '$line_col',
     'plot_point_size': '2pt',
@@ -78,7 +93,12 @@ def check_keys(style):
     return style
 
 def update(*styles, parent_style=None):
-    """Merge a list of styles.  Later entries override earlier ones."""
+    """Merge a list of styles.
+
+    Later entries override earlier ones and defaults are used where no
+    values are given.
+
+    """
     styles = [dict(style) for style in styles if style is not None]
 
     for style in styles:

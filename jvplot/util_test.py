@@ -12,7 +12,10 @@
 # GNU General Public License for more details.
 
 import nose.tools
-from .util import convert_dim
+
+import numpy as np
+
+from . import util
 
 
 def testconvert_dim():
@@ -23,11 +26,45 @@ def testconvert_dim():
             ('10mm', '1cm'),
             ('72bp', '1in'),
             ('72.27pt', '1in'),
+            ('1pt', 1/72.27),
             ('1px', 1/res),
         ]
         print('\nres =', res)
         for a, b in tests:
-            da = convert_dim(a, res)
-            db = convert_dim(b, res)
+            da = util.convert_dim(a, res)
+            db = util.convert_dim(b, res)
             print(a, b, res)
             nose.tools.assert_almost_equal(da, db)
+
+        d = util.convert_dim(1, res)
+        nose.tools.assert_almost_equal(d, res)
+
+def test_data_range():
+    with nose.tools.assert_raises(ValueError):
+        util.data_range()
+
+    a, b = util.data_range(1)
+    assert a == 1 and b == 1
+
+    a, b = util.data_range(3, 1, 4, 1, 5)
+    assert a == 1 and b == 5
+
+    a, b = util.data_range([3, 1, 4, 1, 5])
+    assert a == 1 and b == 5
+
+    a, b = util.data_range([1, (2, 3)],
+                           [4, 5, 6],
+                           np.arange(7, 10))
+    assert a == 1 and b == 9
+
+    a, b = util.data_range(np.inf, -np.inf, 2, np.nan)
+    assert a == 2 and b == 2
+
+    a, b = util.data_range([np.inf, -np.inf, 2, np.nan])
+    assert a == 2 and b == 2
+
+    a, b = util.data_range(np.array([np.inf, -np.inf, 2, np.nan]))
+    assert a == 2 and b == 2
+
+    with nose.tools.assert_raises(TypeError):
+        util.data_range("fish")

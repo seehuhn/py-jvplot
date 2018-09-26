@@ -36,32 +36,47 @@ def convert_dim(dim, res, parent_length=None):
     """
     if dim is None:
         return None
-    unit = 1
+    unit = None
+
     try:
+        dim = float(dim)
+        unit = 1
+    except:
+        dim = str(dim)
+
+    if unit is None:
         for pfx, scale in UNITS.items():
-            if not dim.endswith(pfx):
-                continue
-            dim = dim[:-len(pfx)]
-            unit = scale
-        else:
-            if dim.endswith('px'):
-                if res is None:
-                    raise ValueError(
-                        'pixel length %s in invalid context' % dim)
-                dim = dim[:-2]
-                unit = 1 / res
-            elif dim.endswith('%'):
-                if parent_length is None:
-                    raise ValueError(
-                        'relative length %s in invalid context' % dim)
-                dim = dim[:-1]
-                unit = parent_length / 100 / res
-    except AttributeError:
-        pass
+            if dim.endswith(pfx):
+                dim = dim[:-len(pfx)]
+                unit = scale
+                break
+
+    if unit is None and dim.endswith('px'):
+        if res is None:
+            raise ValueError(
+                'pixel length %s in invalid context' % dim)
+        dim = dim[:-2]
+        unit = 1 / res
+
+    if unit is None and dim.endswith('%'):
+        if parent_length is None:
+            raise ValueError(
+                'relative length %s in invalid context' % dim)
+        dim = dim[:-1]
+        unit = parent_length / 100 / res
+
+    if unit is None:
+        raise ValueError("invalid dimension " + dim)
+
     return float(dim) * unit * res
 
+def parse_dash_pattern(dash, res):
+    if not dash or dash == "none":
+        return []
+    lengths = dash.split(",")
+    return [convert_dim(l, res) for l in lengths]
 
-def _check_vec(v, n, broadcast=False):
+def check_vec(v, n, broadcast=False):
     if isinstance(v, str):
         if not broadcast:
             raise TypeError('string "%s" used as vec%d' % (v, n))
@@ -77,14 +92,14 @@ def _check_vec(v, n, broadcast=False):
 
     if broadcast and 1 <= k < n and n % k == 0:
         return list(v) * (n // k)
-    elif k != n:
+    if k != n:
         tmpl = "%s used as vec%d, but has length %s != %d"
         raise ValueError(tmpl % (repr(v), n, k, n))
     return v
 
 
 def _check_num_vec(v, n, broadcast=False):
-    v = _check_vec(v, n, broadcast)
+    v = check_vec(v, n, broadcast)
     try:
         v = [float(vi) for vi in v]
     except ValueError:
@@ -101,14 +116,12 @@ def _check_coords(x, y):
         shape = x.shape
         if len(shape) == 1:
             return np.arange(1, shape[0]+1), x
-        elif len(shape) == 2 and shape[1] == 2:
+        if len(shape) == 2 and shape[1] == 2:
             return x[:, 0], x[:, 1]
-        else:
-            raise ValueError('x has wrong shape %s' % shape)
-    else:
-        y = np.array(y)
-        if not y.shape:
-            y = y.reshape((1,))
+        raise ValueError('x has wrong shape %s' % shape)
+    y = np.array(y)
+    if not y.shape:
+        y = y.reshape((1,))
     if len(x.shape) != 1:
         raise ValueError('x has wrong shape %s' % repr(x.shape))
     if len(y.shape) != 1:
@@ -123,3 +136,50 @@ def _check_coord_pair(x, y):
     if y is None:
         x, y = list(x)
     return float(x), float(y)
+
+def data_range(*args):
+    lower = np.inf
+    upper = -np.inf
+    for arg in args:
+        # ignore x_range and y_range default values
+        if arg is None:
+            continue
+
+        # numbers are easy
+        if isinstance(arg, (float, int)):
+            if not np.isfinite(arg):
+                continue
+            if arg < lower:
+                lower = arg
+            if arg > upper:
+                upper = arg
+            continue
+
+        # try whether numpy can deal with `arg`
+        try:
+            aa = np.array(arg).flatten()
+            aa = aa[np.isfinite(aa)]
+            a = np.min(aa)
+            b = np.max(aa)
+        except ValueError:
+            a = None
+        if a is not None:
+            if a < lower:
+                lower = a
+            if b > upper:
+                upper = b
+            continue
+
+        # try whether `arg` is iterable
+        try:
+            for a2 in arg:
+                a, b = data_range(a2)
+                if a < lower:
+                    lower = a
+                if b > upper:
+                    upper = b
+        except TypeError:
+            raise TypeError(f"invalid data range {arg!r}")
+    if lower > upper:
+        raise ValueError("no data range specified")
+    return lower, upper

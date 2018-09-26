@@ -1,7 +1,5 @@
 #! /usr/bin/env python3
 
-import numpy as np
-
 import nose.tools
 
 from . import canvas
@@ -17,18 +15,18 @@ def test_canvas_param():
     lw = '17pt'
     c1 = canvas.Canvas(None, [0, 0, 200, 400], res=res, parent=None,
                        style={'padding': '0pt',
-                              'axis_margin_left': '10%',
-                              'axis_margin_top': '20%',
-                              'axis_margin_bottom': '$axis_margin_right',
+                              'margin_left': '10%',
+                              'margin_top': '20%',
+                              'margin_bottom': '$margin_right',
                               'lw': lw})
 
     # parameter type 'width'
-    key = 'axis_margin_left'
+    key = 'margin_left'
     val = c1.get_param(key)
     nose.tools.assert_almost_equal(val, 0.1*200)
 
     # parameter type 'height'
-    key = 'axis_margin_top'
+    key = 'margin_top'
     val = c1.get_param(key)
     nose.tools.assert_almost_equal(val, 0.2*400)
 
@@ -68,27 +66,3 @@ def test_plot_aspect():
     with plot.Plot("/dev/null", 3, 5) as pl:
         ax = pl.plot([1, 2, 3], [1, -1, 1], aspect=1)
         nose.tools.assert_almost_equal(ax.scale[0], ax.scale[1])
-
-def test_data_range():
-    with nose.tools.assert_raises(ValueError):
-        canvas.data_range()
-
-    a, b = canvas.data_range(1)
-    assert a == 1 and b == 1
-
-    a, b = canvas.data_range(3, 1, 4, 1, 5)
-    assert a == 1 and b == 5
-
-    a, b = canvas.data_range([3, 1, 4, 1, 5])
-    assert a == 1 and b == 5
-
-    a, b = canvas.data_range([1, (2, 3)],
-                             [4, 5, 6],
-                             np.arange(7, 10))
-    assert a == 1 and b == 9
-
-    a, b = canvas.data_range(np.inf, -np.inf, 2, np.nan)
-    assert a == 2 and b == 2
-
-    with nose.tools.assert_raises(TypeError):
-        canvas.data_range("fish")

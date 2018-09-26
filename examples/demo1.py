@@ -9,6 +9,6 @@ with Plot('demo1.pdf', '4.5in', '4.5in') as fig:
                      np.random.rand(1000),
                      aspect=1,
                      style={
-                         'axis_margin_bottom': '1cm',
-                         'axis_margin_left': '1cm',
+                         'margin_bottom': '1cm',
+                         'margin_left': '1cm',
                      })

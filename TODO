@@ -3,26 +3,26 @@ API design
 
 - swap the row/column arguments of Canvas.subplot()?
   Or use a two-dimensional argument to select the subplot?
-- rename x_lim -> xlim and y_lim -> ylim for compatibility with R?
-- replace `viewport` with a new function to draw an empty set
-  of axes
-- don't use `rect` for data coordinates.  Use x_range and y_range
+- don't use `rect` for data coordinates.  Use x_lim and y_lim
   instead.
 - swap the arguments of `draw_image`
+- rationalize the parameter names.  For example, does the "plot" in
+  "plot_point_col" make sense?
+- reconsider the split between "param.py" and "util.py"
+- be more systematic about the order of arguments
 
 bug fixes
 ---------
 
-- if the right/top-most tick label does not fit within the padding,
-  move the label inwards a bit.
 - autogenerate doc-strings for configuration parameters
 - Maybe axis tick labels should use the same number of digits
   throughout, not 0.38, 0.385, 0.39?
 - pixel-align the axis box (and maybe the tick marks?)
-- use `draw_text` or a similar function to draw all labels.
 - use "*-padding-*" style parameters instead of `_spread()`
 - when layouting decided so snap one edge to 0, don't have
   the label for 0 right at the edge of the box
+- introduce a penalty when the distance between the outermost tick
+  and the tick edge is too long
 
 enhancements
 ------------
@@ -40,10 +40,11 @@ enhancements
 - Choose a nicer style for the sphinx HTML output.
 - implement box plots
 - if one of the functions which create axes (e.g. `Canvas.plot()`) is
-  called a second time, switch to a new page
-- allow to place axis labels along all four edges of a plot
+  called a second time, switch to a new page?
 - make it easy to label the lines created by `draw_affine()`
-- add support for different line styles
 - add support for embedded figure legends
 - if values are integers, prefer integer-valued labels
 - add a function to draw color bars
+- allow to draw several lines in one call to `draw_affine`
+- in "demo2.py" use multiples of pi for the x-axis labels
+- can we get away with only keeping the changed keys in `param.update`?

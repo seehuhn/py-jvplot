@@ -5,7 +5,8 @@ import numpy as np
 from jvplot import Plot
 
 with Plot('demo5.png', '4.5in', '4.5in') as pl:
-    ax = pl.viewport(pl.rect, (0, 1), (0, 1))
+    ax = pl.axes((0, 1), (0, 1), rect=pl.rect,
+                 style=dict(axis_border=0, axis_ticks=''))
 
     w = 10
     h = 10
