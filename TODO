@@ -1,11 +1,10 @@
 API design
 ----------
 
+- revise the decision that numerical parameters are interpreted as inches,
+  but get_param returns numerical values as pixels.  Use pixels throughout?
 - swap the row/column arguments of Canvas.subplot()?
   Or use a two-dimensional argument to select the subplot?
-- don't use `rect` for data coordinates.  Use x_lim and y_lim
-  instead (e.g. in `Axes.draw_image()`).
-- swap the arguments of `draw_image`
 - rationalize the parameter names.  For example, does the "plot" in
   "plot_point_col" make sense?
 - reconsider the split between "param.py" and "util.py"
@@ -14,7 +13,7 @@ API design
 bug fixes
 ---------
 
-- pixel-align the axis box (and maybe the tick marks?)
+- move the labels for color bars to the right by default
 
 enhancements
 ------------
@@ -36,8 +35,8 @@ enhancements
 - make it easy to label the lines created by `draw_affine()`
 - add support for embedded figure legends
 - if values are integers, prefer integer-valued labels
-- add a function to draw color bars
 - allow to draw several lines in one call to `draw_affine`
 - can we get away with only keeping the changed keys in `param.update`?
 - autogenerate doc-strings for configuration parameters
 - add support for images with 1 or 4 channels
+- pixel-align the axis box (and maybe the tick marks?)

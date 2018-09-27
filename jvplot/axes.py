@@ -78,12 +78,14 @@ class Axes(device.Device):
     def decorate(self, *, style=None):
         style = param.check_keys(style)
 
-        border = self._get_param('axis_border', style)
+        col = self._get_param('axis_border_col', style)
+        border = self._get_param('axis_border_lw', style)
 
         ctx = self.parent_ctx
-        if border > 0:
+        if border > 0 and col[3] > 0:
             ctx.rectangle(*self.rect)
             ctx.set_line_width(border)
+            ctx.set_source_rgba(*col)
             ctx.set_line_join(cairo.LINE_JOIN_MITER)
             ctx.stroke()
 
@@ -91,7 +93,8 @@ class Axes(device.Device):
         tick_width = self._get_param('axis_tick_width', style)
         tick_length = self._get_param('axis_tick_length', style)
         tick_font_size = self._get_param('tick_font_size', style)
-        tick_font_col = self._get_param('tick_font_col', style)
+        tick_label_col = self._get_param('tick_font_col', style)
+        tick_line_col = self._get_param('axis_tick_col', style)
         x_label_dist = self._get_param('tick_label_dist_x', style)
         y_label_dist = self._get_param('tick_label_dist_y', style)
 
@@ -133,6 +136,7 @@ class Axes(device.Device):
         ctx.save()
         self.ctx.set_line_cap(cairo.LINE_CAP_BUTT)
         self.ctx.set_line_width(tick_width)
+        self.ctx.set_source_rgba(*tick_line_col)
         for i, val in enumerate(values):
             mid = base + val * delta
             x0, y0 = mid + d_tick
@@ -145,9 +149,35 @@ class Axes(device.Device):
                 xt -= adjust[i]
                 self._draw_text(xt, yt, labels[i], tick_font_size,
                                 horizontal_align=h_align,
-                                col=tick_font_col,
+                                col=tick_label_col,
                                 vertical_align=v_align, ctx=ctx)
         ctx.stroke()
+        ctx.restore()
+
+    def _draw_axis_label(self, text, where, style):
+        dx = self._get_param('axis_label_dist_x', style)
+        dy = self._get_param('axis_label_dist_y', style)
+        label_font_size = self._get_param('axis_label_size', style)
+        label_font_col = self._get_param('axis_label_col', style)
+
+        rect = self.rect
+        w_tab = {
+            'b': (rect[0] + rect[2]/2, rect[1] - dx,
+                  "top", 0),
+            't': (rect[0] + rect[2]/2, rect[1] + rect[3] + dx,
+                  "bottom", 0),
+            'l': (rect[0] - dy, rect[1] + rect[3]/2,
+                  "bottom", np.pi/2),
+            'r': (rect[0] + rect[2] + dy, rect[1] + rect[3]/2,
+                  "top", np.pi/2),
+        }
+        x, y, align, rot = w_tab[where]
+
+        ctx = self.parent_ctx   # special context to avoid clipping
+        ctx.save()
+        self._draw_text(x, y, text, label_font_size, col=label_font_col,
+                        horizontal_align="center", vertical_align=align,
+                        rotate=rot, ctx=ctx)
         ctx.restore()
 
     def data_to_dev_x(self, x_data):
@@ -372,7 +402,7 @@ class Axes(device.Device):
         self.ctx.stroke()
         self.ctx.restore()
 
-    def draw_image(self, rect, pixels, *, style=None):
+    def draw_image(self, pixels, x_range=None, y_range=None, *, style=None):
         """Draw a raster image onto the canvas.
 
         The array ``pixels`` gives the pixel intensities, as RGB
@@ -382,23 +412,19 @@ class Axes(device.Device):
         green, blue.
 
         args:
-            rect: A list of the form [x, y, w, h], which specifies the
-                outermost edge of the image in data coordinates.
             pixels (array): the pixel intensities, in the form described
                 above.
+            ...
             style (dict, optional): Default plot graphics values for the
                 canvas.
 
         """
         style = param.check_keys(style)
+        if x_range is None:
+            x_range = self.x_range
+        if y_range is None:
+            y_range = self.y_range
 
-        if rect is None:
-            rect = [
-                self.x_range[0],
-                self.y_range[0],
-                self.x_range[1]-self.x_range[0],
-                self.y_range[1]-self.y_range[0],
-            ]
         pixels = np.array(pixels)
         s = pixels.shape
         if len(s) != 3 or s[2] != 3:
@@ -418,16 +444,10 @@ class Axes(device.Device):
             img = img[:, :, ::-1]
         np.clip(pixels*256, 0, 255, out=img[:, :, 1:])
 
-        if rect is not None:
-            x0 = self.data_to_dev_x(rect[0])
-            x1 = self.data_to_dev_x(rect[0] + rect[2])
-            y0 = self.data_to_dev_y(rect[1])
-            y1 = self.data_to_dev_y(rect[1] + rect[3])
-        else:
-            x0 = self.rect[0]
-            x1 = self.rect[0] + self.rect[2]
-            y0 = self.rect[1]
-            y1 = self.rect[1] + self.rect[3]
+        x0 = self.data_to_dev_x(x_range[0])
+        x1 = self.data_to_dev_x(x_range[1])
+        y0 = self.data_to_dev_y(y_range[0])
+        y1 = self.data_to_dev_y(y_range[1])
 
         # copy the source image onto the Axes surface
         self.ctx.save()

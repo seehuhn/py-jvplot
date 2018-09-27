@@ -36,9 +36,9 @@ def test_canvas_param():
     assert val == util.convert_dim(param.DEFAULT[key][1], res)
 
     # parameter type 'col'
-    key = 'line_col'
+    key = 'fg_col'
     val = c1.get_param(key)
-    assert val == color.get(param.DEFAULT[key][1])
+    assert val == color.get(param.ROOT[key])
 
     # parameter type 'bool'
     key = 'plot_point_separate'
@@ -61,6 +61,11 @@ def test_canvas_param():
     with nose.tools.assert_raises(errors.InvalidParameterName):
         # mis-spelled 'font_size'
         c1.get_param('font_size', style={'font.size': '10px'})
+
+def test_axes():
+    with plot.Plot("/dev/null", 3, 5) as pl:
+        with nose.tools.assert_raises(ValueError):
+            pl.axes()
 
 def test_plot_aspect():
     with plot.Plot("/dev/null", 3, 5) as pl:

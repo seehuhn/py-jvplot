@@ -197,7 +197,7 @@ class Device:
         else:
             y_offs = util.convert_dim(vertical_align, self.res, line_height)
 
-        if bg_col is not None and bg_col[4] > 0:
+        if bg_col is not None and bg_col[3] > 0:
             ctx.save()
             ctx.set_source_rgba(*bg_col)
             ctx.move_to(x, y)

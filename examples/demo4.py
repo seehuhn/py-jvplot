@@ -12,9 +12,9 @@ style = {
     'margin_right': '1cm',
 }
 with Plot('demo4.pdf', '4.5in', '4.5in', style=style) as pl:
-    plain = dict(axis_border=0,
+    plain = dict(axis_border_lw=0,
                  axis_ticks="")
-    ax = pl.axes((0, 1), (0, 1), rect=pl.rect, style=plain)
+    ax = pl.axes(x_lim=(0, 1), y_lim=(0, 1), rect=pl.rect, style=plain)
     coords = [
         [0.1, 0.1],
         [0.1, 0.9],

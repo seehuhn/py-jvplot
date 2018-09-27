@@ -223,6 +223,14 @@ class Canvas(device.Device):
             else:
                 sub_ticks[pos] = (pos, pos.upper())
 
+        base_labels = self._get_param('axis_labels', style)
+        sub_labels = {}
+        for pos in 'bltr':
+            if pos in base_labels:
+                sub_labels[pos] = ('', pos)
+            else:
+                sub_labels[pos] = ('', '')
+
         ax_rows = []
         for row in range(p):      # rows from bottom to top
             y = self.rect[1] + mar_bottom + row * (h + mar_between)
@@ -262,18 +270,20 @@ class Canvas(device.Device):
                                         sub_ticks['l'][col == min(cc)] +
                                         sub_ticks['t'][row == max(rr)] +
                                         sub_ticks['r'][col == max(cc)])
-
-                    x_lab = names[col] if row == min(rr) else None
-                    y_lab = names[row] if col == min(cc) else None
-                    ax = self._add_axes(rect,
-                                        ranges[col], ranges[row], None, None,
-                                        None, s2,
-                                        x_lab=x_lab,
-                                        y_lab=y_lab)
+                    s2['axis_labels'] = (sub_labels['b'][row == min(rr)] +
+                                         sub_labels['l'][col == min(cc)] +
+                                         sub_labels['t'][row == max(rr)] +
+                                         sub_labels['r'][col == max(cc)])
                     if fn is None:
+                        ax = self._add_axes(rect,
+                                            ranges[col], ranges[row], None, None,
+                                            None, s2,
+                                            x_lab=names[col],
+                                            y_lab=names[row])
                         ax.draw_points(z[:, col], z[:, row])
                     else:
-                        fn(ax, row, col)
+                        ax = fn(self, row, col, rect, ranges[col], ranges[row],
+                                names[col], names[row], s2)
                 ax_row.append(ax)
             ax_rows.append(ax_row)
         return np.array(ax_rows)
@@ -358,11 +368,11 @@ class Canvas(device.Device):
         rect = rect or self.get_margin_rect(style=style)
         ax = self._add_axes(rect, x_range, y_range, None, None, aspect, style,
                             x_lab=x_lab, y_lab=y_lab)
-        ax.draw_image(None, pixels, style=style)
+        ax.draw_image(pixels, style=style)
         return ax
 
-    def axes(self, x_lim, y_lim, *, rect=None,
-             x_lab=None, y_lab=None, style=None):
+    def axes(self, *, x_range=None, y_range=None, x_lim=None, y_lim=None,
+             rect=None, x_lab=None, y_lab=None, style=None):
         """Draw a set of coordinate axes and return a new canvas representing
         the data area inside the axes.
 
@@ -378,8 +388,38 @@ class Canvas(device.Device):
         """
         style = param.check_keys(style)
         rect = rect or self.get_margin_rect(style=style)
-        ax = self._add_axes(rect, None, None, x_lim, y_lim, None, style,
+        ax = self._add_axes(rect, x_range, y_range, x_lim, y_lim, None, style,
                             x_lab=x_lab, y_lab=y_lab)
+        return ax
+
+    def color_bar(self, color_scale, *, rect=None, discrete=False, steps=100,
+                  y_lab=None, style=None):
+        style = param.check_keys(style)
+
+        if rect is None:
+            color_bar_width = self._get_param('color_bar_width', style)
+            margin_left = self._get_param('margin_left', style)
+            rect = self.get_margin_rect(style=style)
+            rect[0] = rect[0] + rect[2] - color_bar_width
+            rect[2] = color_bar_width
+            self.rect[2] -= margin_left + color_bar_width
+        lw = self._get_param('color_bar_border_lw', style)
+        style = param.update(style, parent_style=self.style,
+                             axis_ticks='L',
+                             axis_border_lw=lw/self.res,
+                             padding=0)
+        ax = self._add_axes(rect, None, color_scale.data_range(),
+                            (0, 1), None, None, style, y_lab=y_lab)
+
+        y_range = ax.y_range
+        if discrete:
+            y_range = (np.round(y_range[0])-.5, np.round(y_range[1])+.5)
+            if steps > y_range[1] - y_range[0]:
+                steps = int(y_range[1] - y_range[0])
+        steps = np.linspace(y_range[0], y_range[1], steps).reshape((-1, 1))
+        img = color_scale(steps)
+        ax.draw_image(img, [0, 1], y_range)
+
         return ax
 
     def subplot(self, cols, rows, idx=None, *, style=None):
@@ -433,8 +473,10 @@ class Canvas(device.Device):
 
     def _add_axes(self, rect, x_range, y_range, x_lim, y_lim,
                   aspect, style, *, x_lab=None, y_lab=None):
-        assert x_range or x_lim
-        assert y_range or y_lim
+        if not (x_range or x_lim):
+            raise ValueError("need to specify either x_range or x_lim")
+        if not (y_range or y_lim):
+            raise ValueError("need to specify either y_range or y_lim")
 
         padding_bottom = self._get_param('padding_bottom', style)
         padding_left = self._get_param('padding_left', style)
@@ -487,11 +529,8 @@ class Canvas(device.Device):
 
         style = style.copy()
         def decorate():
-            x_label_dist = self._get_param('axis_label_dist_x', style)
-            y_label_dist = self._get_param('axis_label_dist_y', style)
             ticks = self._get_param('axis_ticks', style)
-            label_font_size = self._get_param('label_font_size', style)
-            label_font_col = self._get_param('label_font_col', style)
+            labels = self._get_param('axis_labels', style)
 
             ax.decorate()
             for pos in 'bt':
@@ -505,18 +544,14 @@ class Canvas(device.Device):
                 y_labels = y_sff.labels(yt) if pos.upper() in ticks else None
                 ax._draw_ticks(yt, y_labels, pos, style)
 
-            if x_lab:
-                self._draw_text(rect[0] + .5 * rect[2],
-                                rect[1] - x_label_dist,
-                                x_lab, label_font_size, col=label_font_col,
-                                horizontal_align="center",
-                                vertical_align="top")
-            if y_lab:
-                self._draw_text(rect[0] - y_label_dist,
-                                rect[1] + .5 * rect[3],
-                                y_lab, label_font_size, col=label_font_col,
-                                horizontal_align="center",
-                                vertical_align="bottom", rotate=np.pi/2)
+            for pos in 'bt':
+                if not x_lab or pos not in labels:
+                    continue
+                ax._draw_axis_label(x_lab, pos, style)
+            for pos in 'lr':
+                if not y_lab or pos not in labels:
+                    continue
+                ax._draw_axis_label(y_lab, pos, style)
 
         self._on_close.append(decorate)
 

@@ -13,6 +13,9 @@
 
 import re
 
+import numpy as np
+
+
 d_ = r'\s*([.0-9]+)\s*'
 rgb_pattern_ = re.compile(r'rgb\(' + d_ + ',' + d_ + ',' + d_ + r'\)$')
 rgba_pattern_ = re.compile(r'rgba\(' + d_ + ',' + d_ + ',' + d_ + ','
@@ -979,6 +982,15 @@ def get(col):
     r = -1
     if col is None or col == "transparent":
         r, g, b, a = TRANSPARENT
+    elif isinstance(col, (tuple, list)):
+        if len(col) == 1:
+            col = float(col[0])
+            r, g, b, a = col, col, col, 1.
+        elif len(col) == 3:
+            r, b, g = [float(c) for c in col]
+            a = 1.
+        elif len(col) == 4:
+            r, b, g, a = [float(c) for c in col]
     elif col.startswith('#'):
         if len(col) == 1 + 6:
             r = int(col[1:3], 16) / 255
@@ -1013,3 +1025,43 @@ def get(col):
         tmpl = 'color components out of range: (%f,%f,%f,%f)'
         raise ValueError(tmpl % (r, g, b, a))
     return (r, g, b, a)
+
+
+class Scale:
+
+    def __init__(self, colors, *data, amplify_min=0.0, smooth=.1):
+        colors = [get(col)[:3] for col in colors]
+        n = len(colors)
+        if n < 2:
+            raise ValueError("need at least two colors to build a scale")
+        if not data:
+            raise ValueError("need at least one data range")
+        data = [np.array(x, dtype=np.float64).flatten() for x in data]
+        data = np.concatenate(data)
+
+        qq = np.linspace(0, 1, n)
+        if amplify_min > 0:
+            qq = np.square(qq)
+        qq = np.percentile(data, qq*100)
+
+        if smooth > 0:
+            rr = np.linspace(np.min(data), np.max(data), n)
+            qq = np.power(qq, 1-smooth) * np.power(rr, smooth)
+
+        self.steps = qq
+        self.colors = np.array(colors)
+
+    def __call__(self, x):
+        x = np.expand_dims(np.array(x), -1)
+        steps = self.steps
+        dx = x - steps
+        ds = steps[1:] - steps[:-1]
+
+        ones = np.ones(x.shape[:-1]+(1,))
+        w = np.minimum(np.concatenate([ones, dx[..., :-1] / ds], axis=-1),
+                       np.concatenate([-dx[..., 1:] / ds, ones], axis=-1))
+        w = np.maximum(w, 0)
+        return np.tensordot(w, self.colors, axes=1)
+
+    def data_range(self):
+        return (self.steps[0], self.steps[-1])
