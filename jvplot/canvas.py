@@ -149,7 +149,8 @@ class Canvas(device.Device):
         return ax
 
     def scatter_plot(self, x, y=None, *, x_extra=None, y_extra=None,
-                     aspect=None, x_lim=None, y_lim=None, rect=None, style=None):
+                     aspect=None, x_lim=None, y_lim=None, rect=None,
+                     x_lab=None, y_lab=None, style=None):
         """Draw a scatter plot.
 
         Args:
@@ -180,7 +181,8 @@ class Canvas(device.Device):
         x_range = util.data_range(x, x_extra)
         y_range = util.data_range(y, y_extra)
         rect = rect or self.get_margin_rect(style=style)
-        ax = self._add_axes(rect, x_range, y_range, x_lim, y_lim, aspect, style)
+        ax = self._add_axes(rect, x_range, y_range, x_lim, y_lim, aspect, style,
+                            x_lab=x_lab, y_lab=y_lab)
         ax.draw_points(x, y)
         return ax
 
