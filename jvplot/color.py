@@ -1046,10 +1046,13 @@ class Scale:
 
         if smooth > 0:
             rr = np.linspace(np.min(data), np.max(data), n)
-            qq = np.power(qq, 1-smooth) * np.power(rr, smooth)
+            qq = (1-smooth) * qq + smooth * rr
 
         self.steps = qq
         self.colors = np.array(colors)
+
+    def __str__(self):
+        return f"<color.Scale, {self.steps[0]} to {self.steps[-1]}>"
 
     def __call__(self, x):
         x = np.expand_dims(np.array(x), -1)

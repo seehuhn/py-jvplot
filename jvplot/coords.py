@@ -76,6 +76,7 @@ def ticks_inside(sff, a, b, max_ticks=20):
 
     """
 
+    assert a < b, f"error: {a} !< {b}"
     factory = sff(b - a)
     level = 1
     while True:

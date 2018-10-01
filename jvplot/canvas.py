@@ -186,34 +186,38 @@ class Canvas(device.Device):
         ax.draw_points(x, y)
         return ax
 
-    def pair_scatter_plot(self, z, *, names=None, upper_fn=None, diag_fn=None,
-                          lower_fn=None, style=None):
+    def grid_plot(self, x_ranges, y_ranges=None, *, x_names=None, y_names=None,
+                  upper_fn=None, diag_fn=None, lower_fn=None, style=None):
+        """Create a grid of axes with aligned coordinate ranges."""
         style = param.check_keys(style)
-
-        z = np.array(z)
-        if len(z.shape) != 2:
-            raise ValueError("need two-dimensional data for a pair plot")
-        _, p = z.shape
-        if p > min(self.rect[2], self.rect[3]) / 36:
+        if y_ranges is None:
+            y_ranges = x_ranges
+            y_names = y_names or x_names
+        px = len(x_ranges)
+        py = len(y_ranges)
+        if px > self.rect[2] / 36 or py > self.rect[3] / 36:
             raise ValueError("too many variables, plot area too small")
+        if x_names is None:
+            x_names = [None] * px
+        elif len(x_names) != px:
+            return ValueError(f"x_names must be a list of length {px}")
+        if y_names is None:
+            y_names = [None] * py
+        elif len(y_names) != py:
+            return ValueError(f"y_names must be a list of length {py}")
+
         mar_bottom = self._get_param('margin_bottom', style)
         mar_left = self._get_param('margin_left', style)
         mar_top = self._get_param('margin_top', style)
         mar_right = self._get_param('margin_right', style)
         mar_between = self._get_param('margin_between', style)
 
-        # self.rect[2] = mar_left + p*w + (p-1)*mar_between + mar_right
-        w = (self.rect[2] - mar_left - (p-1)*mar_between - mar_right) / p
-        # self.rect[3] = mar_bottom + p*h + (p-1)*mar_between + mar_top
-        h = (self.rect[3] - mar_bottom - (p-1)*mar_between - mar_top) / p
+        # self.rect[2] = mar_left + px*w + (px-1)*mar_between + mar_right
+        w = (self.rect[2] - mar_left - (px-1)*mar_between - mar_right) / px
+        # self.rect[3] = mar_bottom + py*h + (py-1)*mar_between + mar_top
+        h = (self.rect[3] - mar_bottom - (py-1)*mar_between - mar_top) / py
         if w < 18 or h < 18:
             raise ValueError("margins too large, not enough space")
-
-        ranges = [util.data_range(z[:, i]) for i in range(p)]
-        if names is None:
-            names = [None] * p
-        elif len(names) != p:
-            return ValueError(f"names must be alist of length {p}")
 
         base_ticks = self._get_param('axis_ticks', style)
         sub_ticks = {}
@@ -224,7 +228,6 @@ class Canvas(device.Device):
                 sub_ticks[pos] = (pos, pos)
             else:
                 sub_ticks[pos] = (pos, pos.upper())
-
         base_labels = self._get_param('axis_labels', style)
         sub_labels = {}
         for pos in 'bltr':
@@ -234,10 +237,79 @@ class Canvas(device.Device):
                 sub_labels[pos] = ('', '')
 
         ax_rows = []
-        for row in range(p):      # rows from bottom to top
+        for row in range(py):      # rows from bottom to top
             y = self.rect[1] + mar_bottom + row * (h + mar_between)
 
             ax_row = []
+            for col in range(px):  # colums from left to right
+                x = self.rect[0] + mar_left + col * (w + mar_between)
+                rect = [x, y, w, h]
+
+                if row > col:
+                    fn = upper_fn
+                elif row < col:
+                    fn = lower_fn
+                else:
+                    fn = diag_fn
+
+                if fn == "blank":
+                    ax_row.append(None)
+                    continue
+
+                rr = []
+                cc = []
+                if diag_fn != "blank":
+                    rr.append(col)
+                    cc.append(row)
+                if upper_fn != "blank":
+                    if col+1 < px:
+                        rr.extend(range(col+1, px))
+                    if row > 0:
+                        cc.extend(range(row))
+                if lower_fn != "blank":
+                    if col > 0:
+                        rr.extend(range(col))
+                    if row+1 < py:
+                        cc.extend(range(row+1, py))
+
+
+                axis_ticks = (sub_ticks['b'][row == min(rr)] +
+                              sub_ticks['l'][col == min(cc)] +
+                              sub_ticks['t'][row == max(rr)] +
+                              sub_ticks['r'][col == max(cc)])
+                axis_labels = (sub_labels['b'][row == min(rr)] +
+                               sub_labels['l'][col == min(cc)] +
+                               sub_labels['t'][row == max(rr)] +
+                               sub_labels['r'][col == max(cc)])
+                s_xy = param.merge(style,
+                                   axis_ticks=axis_ticks,
+                                   axis_labels=axis_labels)
+                if fn is None:
+                    ax = self._add_axes(rect, x_ranges[col], y_ranges[row],
+                                        None, None, None, s_xy,
+                                        x_lab=x_names[col],
+                                        y_lab=y_names[row])
+                else:
+                    ax = fn(self, row, col, rect, x_ranges[col], y_ranges[row],
+                            s_xy)
+                ax_row.append(ax)
+            ax_rows.append(ax_row)
+        return np.array(ax_rows)
+
+    def pair_scatter_plot(self, z, *, names=None, upper_fn=None, diag_fn=None,
+                          lower_fn=None, style=None):
+        style = param.check_keys(style)
+
+        z = np.array(z)
+        if len(z.shape) != 2:
+            raise ValueError("need two-dimensional data for a pair plot")
+        _, p = z.shape
+        ranges = [util.data_range(z[:, i]) for i in range(p)]
+
+        grid = self.grid_plot(ranges, x_names=names, upper_fn=upper_fn,
+                              diag_fn=diag_fn, lower_fn=lower_fn, style=style)
+
+        for row in range(p):      # rows from bottom to top
             for col in range(p):  # colums from left to right
                 if row > col:
                     fn = upper_fn
@@ -246,53 +318,14 @@ class Canvas(device.Device):
                 else:
                     fn = diag_fn
 
-                x = self.rect[0] + mar_left + col * (w + mar_between)
-                rect = [x, y, w, h]
-                if fn == "blank":
-                    ax = None
-                else:
-                    rr = []
-                    cc = []
-                    if diag_fn != "blank":
-                        rr.append(col)
-                        cc.append(row)
-                    if upper_fn != "blank":
-                        if col < p-1:
-                            rr.extend(range(col+1, p))
-                        if row > 0:
-                            cc.extend(range(row))
-                    if lower_fn != "blank":
-                        if col > 0:
-                            rr.extend(range(col))
-                        if row < p-1:
-                            cc.extend(range(row+1, p))
-
-                    s2 = style.copy()
-                    s2['axis_ticks'] = (sub_ticks['b'][row == min(rr)] +
-                                        sub_ticks['l'][col == min(cc)] +
-                                        sub_ticks['t'][row == max(rr)] +
-                                        sub_ticks['r'][col == max(cc)])
-                    s2['axis_labels'] = (sub_labels['b'][row == min(rr)] +
-                                         sub_labels['l'][col == min(cc)] +
-                                         sub_labels['t'][row == max(rr)] +
-                                         sub_labels['r'][col == max(cc)])
-                    if fn is None:
-                        ax = self._add_axes(rect,
-                                            ranges[col], ranges[row], None, None,
-                                            None, s2,
-                                            x_lab=names[col],
-                                            y_lab=names[row])
-                        ax.draw_points(z[:, col], z[:, row])
-                    else:
-                        ax = fn(self, row, col, rect, ranges[col], ranges[row],
-                                names[col], names[row], s2)
-                ax_row.append(ax)
-            ax_rows.append(ax_row)
-        return np.array(ax_rows)
+                if fn is None:
+                    ax = grid[row, col]
+                    ax.draw_points(z[:, col], z[:, row])
+        return grid
 
     def histogram(self, x, *, bins=10, range=None, weights=None, density=False,
-                  x_extra=None, y_extra=None, x_lim=None, y_lim=None, rect=None,
-                  style=None):
+                  x_extra=None, y_extra=None, x_lim=None, y_lim=None,
+                  rect=None, style=None):
         """Draw a histogram.
 
         The arguments `x`, `bins`, `range`, `weights`, and `density`

@@ -128,3 +128,18 @@ def update(*styles, parent_style=None, **kwargs):
         assert val is not None and val != "inherit"
         res[key] = val
     return res
+
+def merge(*styles, parent_style=None, **kwargs):
+    res = {}
+    for style in styles + (kwargs,):
+        if style is None:
+            continue
+        for key, val in style.items():
+            if key not in DEFAULT:
+                raise ValueError(f"invalid style parameter {key!r}")
+            if val == "inherit":
+                if parent_style is None:
+                    raise ValueError(f"cannot inherit style {key!r}, no parent")
+                val = parent_style.get(key, DEFAULT[key][1])
+            res[key] = val
+    return res
