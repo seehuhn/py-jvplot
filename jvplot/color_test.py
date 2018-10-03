@@ -1,4 +1,4 @@
-import nose.tools
+import pytest
 
 from . import color
 
@@ -13,9 +13,9 @@ def test_color():
     assert a == 1.0
 
     r, g, b, a = color.get('#123456')
-    nose.tools.assert_almost_equals(r, 0x12/255)
-    nose.tools.assert_almost_equals(g, 0x34/255)
-    nose.tools.assert_almost_equals(b, 0x56/255)
+    assert r == pytest.approx(0x12/255)
+    assert g == pytest.approx(0x34/255)
+    assert b == pytest.approx(0x56/255)
     assert a == 1.0
 
     r, g, b, a = color.get('#000')
@@ -27,12 +27,12 @@ def test_color():
     assert a == 1.0
 
     r, g, b, a = color.get('#789')
-    nose.tools.assert_almost_equals(r, 0x77/255)
-    nose.tools.assert_almost_equals(g, 0x88/255)
-    nose.tools.assert_almost_equals(b, 0x99/255)
+    assert r == pytest.approx(0x77/255)
+    assert g == pytest.approx(0x88/255)
+    assert b == pytest.approx(0x99/255)
     assert a == 1.0
 
-    with nose.tools.assert_raises(ValueError):
+    with pytest.raises(ValueError):
         color.get('#01234G')
 
     r, g, b, a = color.get('red')
@@ -40,7 +40,7 @@ def test_color():
     assert a == 1.0
 
     r, g, b, a = color.get('rgba(0, 127.5, 255, 0.3)')
-    nose.tools.assert_almost_equals(r, .0)
-    nose.tools.assert_almost_equals(g, .5)
-    nose.tools.assert_almost_equals(b, 1.0)
-    nose.tools.assert_almost_equals(a, .3)
+    assert r == pytest.approx(.0)
+    assert g == pytest.approx(.5)
+    assert b == pytest.approx(1.0)
+    assert a == pytest.approx(.3)

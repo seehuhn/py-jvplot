@@ -1,14 +1,15 @@
 API design
 ----------
 
-- revise the decision that numerical parameters are interpreted as inches,
-  but get_param returns numerical values as pixels.  Use pixels throughout?
+- interpret numerical values used for dimensions as device units, not inches
 - swap the row/column arguments of Canvas.subplot()?
   Or use a two-dimensional argument to select the subplot?
 - rationalize the parameter names.  For example, does the "plot" in
   "plot_point_col" make sense?
 - reconsider the split between "param.py" and "util.py"
 - be more systematic about the order of arguments
+- set up graphics parameters so that `ax.draw_...(..., style=dict(col='red'))`
+  works as expected
 
 bug fixes
 ---------
@@ -18,7 +19,6 @@ bug fixes
 enhancements
 ------------
 
-- add a new command to plot "bands"
 - implement logarithmic axes
 - add support for custom tick label formats, e.g. for dates.
   In "demo2.py" use multiples of pi for the x-axis labels.

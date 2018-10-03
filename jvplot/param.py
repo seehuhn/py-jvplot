@@ -30,6 +30,7 @@ DEFAULT = {
     'axis_tick_opt_spacing': ('dim', '2cm', 'optimal spacing for axis tick marks'),
     'axis_tick_width': ('dim', 'inherit', 'line width for axis tick marks'),
     'axis_ticks': ('str', 'inherit', 'positions of axis ticks and tick labels'),
+    'band_bg': ('col', 'rgba(224,224,224,.5)', 'band background color'),
     'color_bar_width': ('width', '21pt', 'width of a color bar'),
     'color_bar_border_lw': ('dim', '$lw_thin', 'color bar border line width'),
     'fg_col': ('col', 'inherit', 'default foreground color'),
@@ -141,5 +142,7 @@ def merge(*styles, parent_style=None, **kwargs):
                 if parent_style is None:
                     raise ValueError(f"cannot inherit style {key!r}, no parent")
                 val = parent_style.get(key, DEFAULT[key][1])
+            elif val == "default":
+                val = DEFAULT[key][1]
             res[key] = val
     return res

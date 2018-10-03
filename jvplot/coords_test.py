@@ -2,7 +2,7 @@
 
 import numpy as np
 
-import nose.tools
+import pytest
 
 from . import coords
 
@@ -60,10 +60,10 @@ def test_fish():
 
 def test_scale_length():
     assert coords._scale_length(0) == 1
-    nose.tools.assert_almost_equal(coords._scale_length(1), 2)
-    nose.tools.assert_almost_equal(coords._scale_length(2), 2.5)
-    nose.tools.assert_almost_equal(coords._scale_length(3), 5)
-    nose.tools.assert_almost_equal(coords._scale_length(4), 10)
+    assert coords._scale_length(1) == pytest.approx(2)
+    assert coords._scale_length(2) == pytest.approx(2.5)
+    assert coords._scale_length(3) == pytest.approx(5)
+    assert coords._scale_length(4) == pytest.approx(10)
 
 def test_smallest_scale_larger_than():
     for x in np.linspace(0.1, 100, 1000):

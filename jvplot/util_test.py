@@ -11,7 +11,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-import nose.tools
+import pytest
 
 import numpy as np
 
@@ -34,13 +34,13 @@ def testconvert_dim():
             da = util.convert_dim(a, res)
             db = util.convert_dim(b, res)
             print(a, b, res)
-            nose.tools.assert_almost_equal(da, db)
+            assert da == pytest.approx(db)
 
         d = util.convert_dim(1, res)
-        nose.tools.assert_almost_equal(d, res)
+        assert d == pytest.approx(res)
 
 def test_data_range():
-    with nose.tools.assert_raises(ValueError):
+    with pytest.raises(ValueError):
         util.data_range()
 
     a, b = util.data_range(1)
@@ -66,5 +66,5 @@ def test_data_range():
     a, b = util.data_range(np.array([np.inf, -np.inf, 2, np.nan]))
     assert a == 2 and b == 2
 
-    with nose.tools.assert_raises(TypeError):
+    with pytest.raises(TypeError):
         util.data_range("fish")

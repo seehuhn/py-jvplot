@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-import nose.tools
+import pytest
 
 from . import canvas
 from . import color
@@ -23,12 +23,12 @@ def test_canvas_param():
     # parameter type 'width'
     key = 'margin_left'
     val = c1.get_param(key)
-    nose.tools.assert_almost_equal(val, 0.1*200)
+    assert val == pytest.approx(0.1*200)
 
     # parameter type 'height'
     key = 'margin_top'
     val = c1.get_param(key)
-    nose.tools.assert_almost_equal(val, 0.2*400)
+    assert val == pytest.approx(0.2*400)
 
     # parameter type 'dim'
     key = 'font_size'
@@ -48,26 +48,26 @@ def test_canvas_param():
     # variables
     key = 'plot_lw'             # default value is '$lw'
     val = c1.get_param(key)
-    nose.tools.assert_almost_equal(val, util.convert_dim(lw, res))
+    assert val == pytest.approx(util.convert_dim(lw, res))
 
     # invalid parameter names
-    with nose.tools.assert_raises(errors.InvalidParameterName):
+    with pytest.raises(errors.InvalidParameterName):
         # mis-spelled 'font_size'
         canvas.Canvas(None, [50, 100, 100, 200], res=res, parent=c1,
                       style={'font.size': '10px'})
-    with nose.tools.assert_raises(errors.InvalidParameterName):
+    with pytest.raises(errors.InvalidParameterName):
         # mis-spelled 'font_size'
         c1.get_param('font.size')
-    with nose.tools.assert_raises(errors.InvalidParameterName):
+    with pytest.raises(errors.InvalidParameterName):
         # mis-spelled 'font_size'
         c1.get_param('font_size', style={'font.size': '10px'})
 
 def test_axes():
     with plot.Plot("/dev/null", 3, 5) as pl:
-        with nose.tools.assert_raises(ValueError):
+        with pytest.raises(ValueError):
             pl.axes()
 
 def test_plot_aspect():
     with plot.Plot("/dev/null", 3, 5) as pl:
         ax = pl.plot([1, 2, 3], [1, -1, 1], aspect=1)
-        nose.tools.assert_almost_equal(ax.scale[0], ax.scale[1])
+        assert ax.scale[0] == pytest.approx(ax.scale[1])

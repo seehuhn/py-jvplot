@@ -17,11 +17,11 @@ the package after every change:
 Unit Tests
 ----------
 
-Unit tests use the `Nose testing framework`_.  To run the tests:
+Unit tests use `pytest`_.  To run the tests call:
 
-    nosetests
+    pytest
 
-.. _Nose testing framework: https://nose.readthedocs.org/en/latest/
+.. _pytest: https://docs.pytest.org/en/latest/contents.html
 
 Documentation
 -------------

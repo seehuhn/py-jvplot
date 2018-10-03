@@ -186,6 +186,40 @@ class Canvas(device.Device):
         ax.draw_points(x, y)
         return ax
 
+    def band_plot(self, x, y_mid=None, y_lower=None, y_upper=None, *,
+                  y_width=None, rect=None, x_extra=None, y_extra=None,
+                  x_lim=None, y_lim=None, aspect=None, x_lab=None,
+                  y_lab=None, style=None):
+        """Draw a band plot.
+
+        """
+        style = param.check_keys(style)
+        x = np.array(x)
+        if y_mid is not None:
+            y_mid = np.array(y_mid)
+        if y_width is not None:
+            y_width = np.array(y_width)
+        if y_lower is not None:
+            y_lower = np.array(y_lower)
+        elif y_mid is not None and y_width is not None:
+            y_lower = y_mid - y_width
+        else:
+            raise ValueError("need to specify y_lower or y_mid and y_width")
+        if y_upper is not None:
+            y_upper = np.array(y_upper)
+        elif y_mid is not None and y_width is not None:
+            y_upper = y_mid + y_width
+        else:
+            raise ValueError("need to specify y_upper or y_mid and y_width")
+
+        x_range = util.data_range(x, x_extra)
+        y_range = util.data_range(y_mid, y_lower, y_upper, y_extra)
+        rect = rect or self.get_margin_rect(style=style)
+        ax = self._add_axes(rect, x_range, y_range, x_lim, y_lim, aspect, style,
+                            x_lab=x_lab, y_lab=y_lab)
+        ax._draw_band(x, y_lower, y_mid, y_upper, style)
+        return ax
+
     def grid_plot(self, x_ranges, y_ranges=None, *, x_names=None, y_names=None,
                   upper_fn=None, diag_fn=None, lower_fn=None, style=None):
         """Create a grid of axes with aligned coordinate ranges."""

@@ -66,7 +66,7 @@ def convert_dim(dim, res, parent_length=None):
         unit = parent_length / 100 / res
 
     if unit is None:
-        raise ValueError("invalid dimension " + dim)
+        raise ValueError(f"invalid dimension {dim!r}")
 
     return float(dim) * unit * res
 
@@ -141,7 +141,7 @@ def data_range(*args):
     lower = np.inf
     upper = -np.inf
     for arg in args:
-        # ignore x_range and y_range default values
+        # ignore default values for unset parameters
         if arg is None:
             continue
 

@@ -23,7 +23,7 @@ setup(
     packages=['jvplot'],
 
     install_requires=['cairocffi'],
-    setup_requires=['nose>=1.0'],
+    setup_requires=['pytest>=3.2.0'],
 
     # metadata for upload to PyPI
     author='Jochen Voss',

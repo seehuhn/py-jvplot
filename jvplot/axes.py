@@ -235,6 +235,31 @@ class Axes(device.Device):
         self.ctx.stroke()
         self.ctx.restore()
 
+    def _draw_band(self, x, y_lower, y_mid, y_upper, style):
+        bg = self._get_param('band_bg', style)
+
+        xt = self.offset[0] + self.scale[0] * x
+        yt_lower = self.offset[1] + self.scale[1] * y_lower
+        yt_mid = self.offset[1] + self.scale[1] * y_mid
+        yt_upper = self.offset[1] + self.scale[1] * y_upper
+
+        if bg[3] > 0:
+            self.ctx.save()
+            self.ctx.set_source_rgba(*bg)
+            op = self.ctx.move_to
+            for xi, yi in zip(xt, yt_lower):
+                op(xi, yi)
+                op = self.ctx.line_to
+            for xi, yi in list(zip(xt, yt_upper))[::-1]:
+                op(xi, yi)
+            self.ctx.fill()
+            self.ctx.restore()
+
+        self.draw_lines(x, y_lower)
+        if y_mid is not None:
+            self.draw_lines(x, y_mid)
+        self.draw_lines(x, y_upper)
+
     def draw_points(self, x, y=None, *, style=None):
         """
         Args:
