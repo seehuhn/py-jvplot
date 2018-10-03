@@ -1,7 +1,6 @@
 API design
 ----------
 
-- interpret numerical values used for dimensions as device units, not inches
 - swap the row/column arguments of Canvas.subplot()?
   Or use a two-dimensional argument to select the subplot?
 - rationalize the parameter names.  For example, does the "plot" in
@@ -14,7 +13,7 @@ API design
 bug fixes
 ---------
 
-- move the labels for color bars to the right by default
+- move the labels for color bars to the right by default?
 
 enhancements
 ------------
@@ -23,10 +22,9 @@ enhancements
 - add support for custom tick label formats, e.g. for dates.
   In "demo2.py" use multiples of pi for the x-axis labels.
 - implement minor axis ticks
-- implement units 'em' and 'en'
-- Relative font sizes can be easily implemented using the
-  parent_height argument of param.get().  But what are the font sizes
-  relative to?
+- Implement units 'em' and 'en'.  Relative font sizes can be easily
+  implemented using the parent_height argument of param.get().  But
+  what are the font sizes relative to?
 - Should the box centers or the box boundaries be labelled in histograms?
 - Choose a nicer style for the sphinx HTML output.
 - implement box plots
@@ -40,3 +38,5 @@ enhancements
 - autogenerate doc-strings for configuration parameters
 - add support for images with 1 or 4 channels
 - pixel-align the axis box (and maybe the tick marks?)
+- in the parameter description, be clear whether dimensions are widths
+  or half-widths.

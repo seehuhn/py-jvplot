@@ -475,7 +475,7 @@ class Canvas(device.Device):
         lw = self._get_param('color_bar_border_lw', style)
         style = param.update(style, parent_style=self.style,
                              axis_ticks='L',
-                             axis_border_lw=lw/self.res,
+                             axis_border_lw=lw,
                              padding=0)
         ax = self._add_axes(rect, None, color_scale.data_range(),
                             (0, 1), None, None, style, y_lab=y_lab)

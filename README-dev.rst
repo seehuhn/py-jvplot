@@ -40,4 +40,4 @@ the `Napoleon extension`_ for Sphinx.  Doc strings should follow the
     make -C doc html
 
 .. _Napoleon extension: http://sphinxcontrib-napoleon.readthedocs.org/en/latest/
-.. _Google Python style guide: http://google.github.io/styleguide/pyguide.html#Comments
+.. _Google Python style guide: https://github.com/google/styleguide/blob/gh-pages/pyguide.md

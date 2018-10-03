@@ -63,11 +63,11 @@ def test_canvas_param():
         c1.get_param('font_size', style={'font.size': '10px'})
 
 def test_axes():
-    with plot.Plot("/dev/null", 3, 5) as pl:
+    with plot.Plot('/dev/null', '3in', '5in') as pl:
         with pytest.raises(ValueError):
             pl.axes()
 
 def test_plot_aspect():
-    with plot.Plot("/dev/null", 3, 5) as pl:
+    with plot.Plot('/dev/null', '3in', '5in') as pl:
         ax = pl.plot([1, 2, 3], [1, -1, 1], aspect=1)
         assert ax.scale[0] == pytest.approx(ax.scale[1])

@@ -38,12 +38,12 @@ class Plot(Canvas):
             `.eps` and `.png`.
 
         width: The figure width.  This can either be a number to give
-            the width in inches, or a string including a length unit
-            like "10cm".
+            the width in device units (pixels), or a string including
+            a length unit like "10cm".
 
         height: The figure height.  This can either be a number to
-            give the height in inches, or a string including a length
-            unit like "10cm".
+            give the height in device units (pixels), or a string
+            including a length unit like "10cm".
 
         res (number, optional): For raster image formats, `res`
             specifies the device resolution in pixels per inch.
@@ -109,8 +109,9 @@ class Plot(Canvas):
         self.file_type = ext
 
     def __str__(self):
-        return '<jvplot.Plot %.0fbpx%.0fbp "%s">' % (
-            self.width, self.height, self.file_name)
+        _, _, w, h = self.rect
+        res = self.res
+        return f'<jvplot.Plot {w/res}in × {h/res}in {self.file_name!r}>'
 
     def close(self):
         """Close the plot and write all outstanding changes to the file.  The

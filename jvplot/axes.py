@@ -240,7 +240,6 @@ class Axes(device.Device):
 
         xt = self.offset[0] + self.scale[0] * x
         yt_lower = self.offset[1] + self.scale[1] * y_lower
-        yt_mid = self.offset[1] + self.scale[1] * y_mid
         yt_upper = self.offset[1] + self.scale[1] * y_upper
 
         if bg[3] > 0:

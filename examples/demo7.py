@@ -21,5 +21,5 @@ style = {
     'axis_tick_length': '1mm',
     'axis_ticks': 'BLTR',
 }
-with jvplot.Plot("demo7.pdf", 6, 6, style=style) as pl:
+with jvplot.Plot("demo7.pdf", "6in", "6in", style=style) as pl:
     pl.pair_scatter_plot(x, diag_fn="blank")

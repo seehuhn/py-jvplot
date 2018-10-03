@@ -26,16 +26,20 @@ def convert_dim(dim, res, parent_length=None):
     """Convert dimensions to device coordinates.
 
     Args:
-        dim: The dimension either a number (inches) or a dimension
-            string including a unit (e.g. "1cm").
+        dim: The dimension, either as a number (device units) or a
+            dimension string including a unit (e.g. "1cm").
         res: The device resolution in units/inch.
-        parent_length: The length of the surrounding element in
-            inches.  If this is set, relative lengths (e.g. "50%") are
+        parent_length: The length of the surrounding element in device
+            units.  If this is set, relative lengths (e.g. "50%") are
             allowed.
+
+    Returns:
+        How many device units correspond to `dim`.
 
     """
     if dim is None:
         return None
+
     unit = None
 
     try:
@@ -48,27 +52,26 @@ def convert_dim(dim, res, parent_length=None):
         for pfx, scale in UNITS.items():
             if dim.endswith(pfx):
                 dim = dim[:-len(pfx)]
-                unit = scale
+                unit = scale * res
                 break
 
     if unit is None and dim.endswith('px'):
         if res is None:
-            raise ValueError(
-                'pixel length %s in invalid context' % dim)
+            raise ValueError(f'pixel length {dim} in invalid context')
         dim = dim[:-2]
-        unit = 1 / res
+        unit = 1
 
     if unit is None and dim.endswith('%'):
         if parent_length is None:
             raise ValueError(
                 'relative length %s in invalid context' % dim)
         dim = dim[:-1]
-        unit = parent_length / 100 / res
+        unit = parent_length / 100
 
     if unit is None:
         raise ValueError(f"invalid dimension {dim!r}")
 
-    return float(dim) * unit * res
+    return float(dim) * unit
 
 def parse_dash_pattern(dash, res):
     if not dash or dash == "none":
