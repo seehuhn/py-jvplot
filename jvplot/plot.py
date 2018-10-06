@@ -22,11 +22,10 @@ import os.path
 
 import cairocffi as cairo
 
-from .canvas import Canvas
-from .util import convert_dim
+from . import canvas, util, param
 
 
-class Plot(Canvas):
+class Plot(canvas.Canvas):
 
     """The Plot Class repesents a file containing a single figure.
 
@@ -53,7 +52,7 @@ class Plot(Canvas):
 
     """
 
-    def __init__(self, file_name, width, height, *, res=None, style={}):
+    def __init__(self, file_name, width, height=None, *, res=None, style={}):
         """Create a new plot."""
 
         self.file_name = file_name
@@ -68,6 +67,18 @@ class Plot(Canvas):
         else:
             raise ValueError('file name "%s" lacks an extension' % file_name)
 
+        if height is None:
+            if width == "A4":
+                width = "210mm"
+                height = "297mm"
+                style = param.merge(dict(padding="15mm"), style)
+            elif width == "A4r":
+                width = "297mm"
+                height = "210mm"
+                style = param.merge(dict(padding="15mm"), style)
+            else:
+                height = width
+
         if res is None:
             if ext == 'png':
                 res = 100
@@ -77,8 +88,8 @@ class Plot(Canvas):
             base_res = res
         else:
             base_res = 72
-        w = int(convert_dim(width, res) + 0.5)
-        h = int(convert_dim(height, res) + 0.5)
+        w = int(util.convert_dim(width, res) + 0.5)
+        h = int(util.convert_dim(height, res) + 0.5)
 
         q = base_res / res
         w_dev = int(w * q + .5)

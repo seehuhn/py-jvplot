@@ -140,8 +140,8 @@ class Canvas(device.Device):
         style = param.check_keys(style)
         x, y = util._check_coords(x, y)
 
-        x_range = util.data_range(x, x_extra)
-        y_range = util.data_range(y, y_extra)
+        x_range = self.data_range(x, x_extra)
+        y_range = self.data_range(y, y_extra)
         rect = rect or self.get_margin_rect(style=style)
         ax = self._add_axes(rect, x_range, y_range, x_lim, y_lim, aspect, style,
                             x_lab=x_lab, y_lab=y_lab)
@@ -178,8 +178,8 @@ class Canvas(device.Device):
         style = param.check_keys(style)
         x, y = util._check_coords(x, y)
 
-        x_range = util.data_range(x, x_extra)
-        y_range = util.data_range(y, y_extra)
+        x_range = self.data_range(x, x_extra)
+        y_range = self.data_range(y, y_extra)
         rect = rect or self.get_margin_rect(style=style)
         ax = self._add_axes(rect, x_range, y_range, x_lim, y_lim, aspect, style,
                             x_lab=x_lab, y_lab=y_lab)
@@ -212,8 +212,8 @@ class Canvas(device.Device):
         else:
             raise ValueError("need to specify y_upper or y_mid and y_width")
 
-        x_range = util.data_range(x, x_extra)
-        y_range = util.data_range(y_mid, y_lower, y_upper, y_extra)
+        x_range = self.data_range(x, x_extra)
+        y_range = self.data_range(y_mid, y_lower, y_upper, y_extra)
         rect = rect or self.get_margin_rect(style=style)
         ax = self._add_axes(rect, x_range, y_range, x_lim, y_lim, aspect, style,
                             x_lab=x_lab, y_lab=y_lab)
@@ -338,7 +338,7 @@ class Canvas(device.Device):
         if len(z.shape) != 2:
             raise ValueError("need two-dimensional data for a pair plot")
         _, p = z.shape
-        ranges = [util.data_range(z[:, i]) for i in range(p)]
+        ranges = [self.data_range(z[:, i]) for i in range(p)]
 
         grid = self.grid_plot(ranges, x_names=names, upper_fn=upper_fn,
                               diag_fn=diag_fn, lower_fn=lower_fn, style=style)
@@ -401,8 +401,8 @@ class Canvas(device.Device):
         hist, bin_edges = np.histogram(x, bins=bins, range=range,
                                        weights=weights, density=density)
 
-        x_range = util.data_range(bin_edges, x_extra)
-        y_range = util.data_range(hist, y_extra)
+        x_range = self.data_range(bin_edges, x_extra)
+        y_range = self.data_range(hist, y_extra)
         rect = rect or self.get_margin_rect(style=style)
         ax = self._add_axes(rect, x_range, y_range, x_lim, y_lim, None, style)
         ax.draw_histogram(hist, bin_edges, style=style)
@@ -547,10 +547,14 @@ class Canvas(device.Device):
         if not (y_range or y_lim):
             raise ValueError("need to specify either y_range or y_lim")
 
-        padding_bottom = self._get_param('padding_bottom', style)
-        padding_left = self._get_param('padding_left', style)
-        padding_top = self._get_param('padding_top', style)
-        padding_right = self._get_param('padding_right', style)
+        padding_bottom = self._get_param('padding_bottom', style,
+                                         use_default=True)
+        padding_left = self._get_param('padding_left', style,
+                                       use_default=True)
+        padding_top = self._get_param('padding_top', style,
+                                      use_default=True)
+        padding_right = self._get_param('padding_right', style,
+                                        use_default=True)
         tick_font_size = self._get_param('tick_font_size', style)
         opt_spacing = self._get_param('axis_tick_opt_spacing', style)
 

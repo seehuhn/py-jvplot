@@ -19,6 +19,8 @@ support for drawing text.
 
 """
 
+import numpy as np
+
 import cairocffi as cairo
 
 from . import color
@@ -83,10 +85,12 @@ class Device:
         style = param.check_keys(style)
         return self._get_param(key, style)
 
-    def _get_param(self, key, style):
-        keys = [key]
+    def _get_param(self, key, style, use_default=False):
+        seen = [key]
         while True:
             value = style.get(key)
+            if value is None and use_default:
+                value = param.DEFAULT.get(key, [None, None])[1]
             if value is None:
                 value = self.style.get(key)
             if value is None:
@@ -95,10 +99,10 @@ class Device:
 
             if isinstance(value, str) and value.startswith('$'):
                 key = value[1:]
-                if key in keys:
-                    msg = ' -> '.join(keys + [key])
+                if key in seen:
+                    msg = ' -> '.join(seen + [key])
                     raise errors.WrongUsage("infinite parameter loop: " + msg)
-                keys.append(key)
+                seen.append(key)
             else:
                 break
 
@@ -222,3 +226,51 @@ class Device:
         ctx.rel_move_to(x_offs, y_offs)
         ctx.show_text(text)
         ctx.restore()
+
+    @staticmethod
+    def data_range(*args):
+        lower = np.inf
+        upper = -np.inf
+        for arg in args:
+            # ignore default values for unset parameters
+            if arg is None:
+                continue
+
+            # numbers are easy
+            if isinstance(arg, (float, int)):
+                if not np.isfinite(arg):
+                    continue
+                if arg < lower:
+                    lower = arg
+                if arg > upper:
+                    upper = arg
+                continue
+
+            # try whether numpy can deal with `arg`
+            try:
+                aa = np.array(arg).flatten()
+                aa = aa[np.isfinite(aa)]
+                a = np.min(aa)
+                b = np.max(aa)
+            except ValueError:
+                a = None
+            if a is not None:
+                if a < lower:
+                    lower = a
+                if b > upper:
+                    upper = b
+                continue
+
+            # try whether `arg` is iterable
+            try:
+                for a2 in arg:
+                    a, b = Device.data_range(a2)
+                    if a < lower:
+                        lower = a
+                    if b > upper:
+                        upper = b
+            except TypeError:
+                raise TypeError(f"invalid data range {arg!r}")
+        if lower > upper:
+            raise ValueError("no data range specified")
+        return lower, upper

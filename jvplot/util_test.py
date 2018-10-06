@@ -39,33 +39,3 @@ def testconvert_dim():
             da = util.convert_dim(a, res, parent_length)
             db = util.convert_dim(b, res, parent_length)
             assert da == pytest.approx(db)
-
-def test_data_range():
-    with pytest.raises(ValueError):
-        util.data_range()
-
-    a, b = util.data_range(1)
-    assert a == 1 and b == 1
-
-    a, b = util.data_range(3, 1, 4, 1, 5)
-    assert a == 1 and b == 5
-
-    a, b = util.data_range([3, 1, 4, 1, 5])
-    assert a == 1 and b == 5
-
-    a, b = util.data_range([1, (2, 3)],
-                           [4, 5, 6],
-                           np.arange(7, 10))
-    assert a == 1 and b == 9
-
-    a, b = util.data_range(np.inf, -np.inf, 2, np.nan)
-    assert a == 2 and b == 2
-
-    a, b = util.data_range([np.inf, -np.inf, 2, np.nan])
-    assert a == 2 and b == 2
-
-    a, b = util.data_range(np.array([np.inf, -np.inf, 2, np.nan]))
-    assert a == 2 and b == 2
-
-    with pytest.raises(TypeError):
-        util.data_range("fish")

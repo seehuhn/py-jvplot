@@ -30,7 +30,7 @@ DEFAULT = {
     'axis_tick_opt_spacing': ('dim', '2cm', 'optimal spacing for axis tick marks'),
     'axis_tick_width': ('dim', 'inherit', 'line width for axis tick marks'),
     'axis_ticks': ('str', 'inherit', 'positions of axis ticks and tick labels'),
-    'band_bg': ('col', 'rgba(224,224,224,.5)', 'band background color'),
+    'band_bg': ('col', 'rgba(200,200,200,.5)', 'band background color'),
     'color_bar_width': ('width', '21pt', 'width of a color bar'),
     'color_bar_border_lw': ('dim', '$lw_thin', 'color bar border line width'),
     'fg_col': ('col', 'inherit', 'default foreground color'),
