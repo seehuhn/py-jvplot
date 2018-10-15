@@ -235,6 +235,29 @@ class Axes(device.Device):
         self.ctx.stroke()
         self.ctx.restore()
 
+    def _draw_rectangle(self, rects, style):
+        s = rects.shape
+        if not s or s[-1] != 4:
+            raise ValueError("last dimension of rect must have size 4")
+        rects = rects.reshape((-1, 4))
+
+        bg = self._get_param('rect_bg', style)
+        fg = self._get_param('rect_fg', style)
+        lw = self._get_param('rect_lw', style)
+
+        self.ctx.save()
+        self.ctx.set_line_width(lw)
+        self.ctx.set_source_rgba(*fg)
+        for rect in rects:
+            print(rect)
+
+        self.ctx.restore()
+
+    def draw_rectangle(self, rects, *, style=None):
+        style = param.check_keys(style)
+        rects = np.array(rects, dtype=np.float64)
+        self._draw_rectangle(rects, style)
+
     def _draw_band(self, x, y_lower, y_mid, y_upper, style):
         bg = self._get_param('band_bg', style)
 
@@ -449,7 +472,7 @@ class Axes(device.Device):
         if y_range is None:
             y_range = self.y_range
 
-        pixels = np.array(pixels)
+        pixels = np.array(pixels, dtype=np.float64)
         s = pixels.shape
         if len(s) != 3 or s[2] != 3:
             raise ValueError("image data must have have shape h x w x 3")
