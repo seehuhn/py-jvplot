@@ -441,7 +441,7 @@ class Canvas(device.Device):
         return ax
 
     def axes(self, *, x_range=None, y_range=None, x_lim=None, y_lim=None,
-             rect=None, x_lab=None, y_lab=None, style=None):
+             aspect=None, rect=None, x_lab=None, y_lab=None, style=None):
         """Draw a set of coordinate axes and return a new canvas representing
         the data area inside the axes.
 

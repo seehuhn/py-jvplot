@@ -238,19 +238,46 @@ class Axes(device.Device):
     def _draw_rectangle(self, rects, style):
         s = rects.shape
         if not s or s[-1] != 4:
-            raise ValueError("last dimension of rect must have size 4")
+            raise ValueError('last dimension of rect must have size 4')
         rects = rects.reshape((-1, 4))
+        x0 = self.offset[0] + rects[:, 0] * self.scale[0]
+        y0 = self.offset[1] + rects[:, 1] * self.scale[1]
+        x1 = x0 + rects[:, 2] * self.scale[0]
+        y1 = y0 + rects[:, 3] * self.scale[1]
+
+        x0[np.isnan(x0)] = -np.inf
+        x1[np.isnan(x1)] = np.inf
+        y0[np.isnan(y0)] = -np.inf
+        y1[np.isnan(y1)] = np.inf
+
+        rows = x0 > x1
+        x0[rows], x1[rows] = x1[rows], x0[rows]
+        rows = y0 > y1
+        y0[rows], y1[rows] = y1[rows], y0[rows]
+
+        gap = 10 * self.res
+        x_min = self.rect[0] - gap
+        x0[x0 < x_min] = x_min
+        x_max = self.rect[0] + self.rect[2] + gap
+        x1[x1 > x_max] = x_max
+        y_min = self.rect[1] - gap
+        y0[y0 < y_min] = y_min
+        y_max = self.rect[1] + self.rect[3] + gap
+        y1[y1 > y_max] = y_max
 
         bg = self._get_param('rect_bg', style)
         fg = self._get_param('rect_fg', style)
         lw = self._get_param('rect_lw', style)
 
         self.ctx.save()
+        for a, b, c, d in zip(x0, x1, y0, y1):
+            self.ctx.rectangle(a, c, b-a, d-c)
+
+        self.ctx.set_source_rgba(*bg)
+        self.ctx.fill_preserve()
         self.ctx.set_line_width(lw)
         self.ctx.set_source_rgba(*fg)
-        for rect in rects:
-            print(rect)
-
+        self.ctx.stroke()
         self.ctx.restore()
 
     def draw_rectangle(self, rects, *, style=None):
