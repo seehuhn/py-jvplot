@@ -116,9 +116,9 @@ class Device:
         if info[0] == 'col':
             return color.get(value)
         if info[0] == 'bool':
-            if value == True or value == "yes" or value == 1:
+            if value in (True, "yes", 1):
                 return True
-            if value == False or value == "no" or value == 0:
+            if value in (False, "no", 0):
                 return False
             raise ValueError(f"cannot use {value!r} as a bool")
         if info[0] == 'dash':

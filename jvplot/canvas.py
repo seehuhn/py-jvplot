@@ -457,8 +457,8 @@ class Canvas(device.Device):
         """
         style = param.check_keys(style)
         rect = rect or self.get_margin_rect(style=style)
-        ax = self._add_axes(rect, x_range, y_range, x_lim, y_lim, None, style,
-                            x_lab=x_lab, y_lab=y_lab)
+        ax = self._add_axes(rect, x_range, y_range, x_lim, y_lim, aspect,
+                            style, x_lab=x_lab, y_lab=y_lab)
         return ax
 
     def color_bar(self, color_scale, *, rect=None, discrete=False, steps=100,

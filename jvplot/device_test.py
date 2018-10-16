@@ -46,8 +46,8 @@ def test_data_range():
     assert a == 1 and b == 5
 
     a, b = data_range([1, (2, 3)],
-                           [4, 5, 6],
-                           np.arange(7, 10))
+                      [4, 5, 6],
+                      np.arange(7, 10))
     assert a == 1 and b == 9
 
     a, b = data_range(np.inf, -np.inf, 2, np.nan)

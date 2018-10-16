@@ -90,7 +90,7 @@ class Axes(device.Device):
             ctx.stroke()
 
     def _draw_ticks(self, values, labels, where, style):
-        tick_width = self._get_param('axis_tick_width', style)
+        tick_lw = self._get_param('axis_tick_lw', style)
         tick_length = self._get_param('axis_tick_length', style)
         tick_font_size = self._get_param('tick_font_size', style)
         tick_label_col = self._get_param('tick_font_col', style)
@@ -132,17 +132,20 @@ class Axes(device.Device):
                                sep)
             adjust = (qq - .5) * ww
 
+        # Since the labels stick out of the plotting area, we need to
+        # use the parent's drawing context.
         ctx = self.parent_ctx
         ctx.save()
-        self.ctx.set_line_cap(cairo.LINE_CAP_BUTT)
-        self.ctx.set_line_width(tick_width)
-        self.ctx.set_source_rgba(*tick_line_col)
+        ctx.set_line_cap(cairo.LINE_CAP_BUTT)
+        ctx.set_line_width(tick_lw)
+        ctx.set_source_rgba(*tick_line_col)
         for i, val in enumerate(values):
             mid = base + val * delta
             x0, y0 = mid + d_tick
             x1, y1 = mid - d_tick
-            ctx.move_to(x0, y0)
-            ctx.line_to(x1, y1)
+            if tick_lw > 0:
+                ctx.move_to(x0, y0)
+                ctx.line_to(x1, y1)
 
             if labels:
                 xt, yt = mid - q*d_tick

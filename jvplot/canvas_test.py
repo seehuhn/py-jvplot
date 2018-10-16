@@ -68,6 +68,13 @@ def test_axes():
             pl.axes()
 
 def test_plot_aspect():
-    with plot.Plot('/dev/null', '3in', '5in') as pl:
-        ax = pl.plot([1, 2, 3], [1, -1, 1], aspect=1)
-        assert ax.scale[0] == pytest.approx(ax.scale[1])
+    for asp in [.5, 1, 2]:
+        with plot.Plot('/dev/null', '3in', '5in') as pl:
+            ax = pl.plot([1, 2, 4], [1, -1, 1], aspect=asp)
+            assert ax.scale[0]/ax.scale[1] == pytest.approx(asp)
+
+def test_axes_aspect():
+    for asp in [.5, 1, 2]:
+        with plot.Plot('/dev/null', '3in', '5in') as pl:
+            ax = pl.axes(x_range=[0, 1], y_range=[0, 2], aspect=asp)
+            assert ax.scale[0]/ax.scale[1] == pytest.approx(asp)
