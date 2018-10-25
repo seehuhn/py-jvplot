@@ -1,10 +1,10 @@
 API design
 ----------
 
-- swap the row/column arguments of Canvas.subplot()?
-  Or use a two-dimensional argument to select the subplot?
 - rationalize the parameter names.  For example, does the "plot" in
   "plot_point_col" make sense?
+- swap the row/column arguments of Canvas.subplot()?
+  Or use a two-dimensional argument to select the subplot?
 - reconsider the split between "param.py" and "util.py"
 - be more systematic about the order of arguments
 - set up graphics parameters so that `ax.draw_...(..., style=dict(col='red'))`
