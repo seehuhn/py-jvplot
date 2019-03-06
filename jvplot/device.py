@@ -252,7 +252,7 @@ class Device:
                 aa = aa[np.isfinite(aa)]
                 a = np.min(aa)
                 b = np.max(aa)
-            except ValueError:
+            except (ValueError, TypeError):
                 a = None
             if a is not None:
                 if a < lower:
