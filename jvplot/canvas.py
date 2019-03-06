@@ -359,7 +359,7 @@ class Canvas(device.Device):
 
     def histogram(self, x, *, bins=10, range=None, weights=None, density=False,
                   x_extra=None, y_extra=None, x_lim=None, y_lim=None,
-                  rect=None, style=None):
+                  x_lab=None, y_lab=None, rect=None, style=None):
         """Draw a histogram.
 
         The arguments `x`, `bins`, `range`, `weights`, and `density`
@@ -404,7 +404,8 @@ class Canvas(device.Device):
         x_range = self.data_range(bin_edges, x_extra)
         y_range = self.data_range(hist, y_extra)
         rect = rect or self.get_margin_rect(style=style)
-        ax = self._add_axes(rect, x_range, y_range, x_lim, y_lim, None, style)
+        ax = self._add_axes(rect, x_range, y_range, x_lim, y_lim, None, style,
+                            x_lab=x_lab, y_lab=y_lab)
         ax.draw_histogram(hist, bin_edges, style=style)
         return ax
 

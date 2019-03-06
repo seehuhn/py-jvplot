@@ -25,7 +25,8 @@ enhancements
 - Implement units 'em' and 'en'.  Relative font sizes can be easily
   implemented using the parent_height argument of param.get().  But
   what are the font sizes relative to?
-- Should the box centers or the box boundaries be labelled in histograms?
+- Should the box centers or the box boundaries be labeled in histograms?
+- Auto-detect integer data for histograms?
 - Choose a nicer style for the sphinx HTML output.
 - implement box plots
 - if one of the functions which create axes (e.g. `Canvas.plot()`) is
