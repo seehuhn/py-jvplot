@@ -27,7 +27,7 @@ from . import canvas, util, param
 
 class Plot(canvas.Canvas):
 
-    """The Plot Class repesents a file containing a single figure.
+    """The Plot Class represents a file containing a single figure.
 
     Args:
         file_name (string): The name of the file the figure will be

@@ -443,10 +443,12 @@ class Canvas(device.Device):
 
     def axes(self, *, x_range=None, y_range=None, x_lim=None, y_lim=None,
              aspect=None, rect=None, x_lab=None, y_lab=None, style=None):
-        """Draw a set of coordinate axes and return a new canvas representing
-        the data area inside the axes.
+        """Draw a set of coordinate axes and return a new Axes object
+        representing the data area inside the axes.
 
         Args:
+            x_range (tuple): the horizontal coordinate range.
+            y_range (tuple): the vertical coordinate range.
             x_lim (tuple): the horizontal coordinate range.
             y_lim (tuple): the vertical coordinate range.
             rect():
