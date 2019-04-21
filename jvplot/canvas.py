@@ -26,6 +26,7 @@ import cairocffi as cairo
 from . import axes
 from . import coords
 from . import device
+from . import hist as histmod
 from . import param
 from . import util
 
@@ -357,7 +358,7 @@ class Canvas(device.Device):
                     ax.draw_points(z[:, col], z[:, row])
         return grid
 
-    def histogram(self, x, *, bins=10, range=None, weights=None, density=False,
+    def histogram(self, x, *, bins=None, range=None, weights=None, density=False,
                   x_extra=None, y_extra=None, x_lim=None, y_lim=None,
                   x_lab=None, y_lab=None, rect=None, style=None):
         """Draw a histogram.
@@ -370,9 +371,10 @@ class Canvas(device.Device):
                 the flattened array.
             bins (int or sequence of numbers, optional): If `bins` is
                 an int, it defines the number of equal-width bins in
-                the given range (10, by default). If `bins` is a
-                sequence, it defines the bin edges, including the
-                rightmost edge, allowing for non-uniform bin widths.
+                the given range. If `bins` is a sequence, it defines
+                the bin edges, including the rightmost edge, allowing
+                for non-uniform bin widths.  If `bins` is not set,
+                a heuristic is used.
             range ((float, float), optional): The lower and upper range
                 of the bins. If not provided, range is simply
                 ``(x.min(), x.max())``.  Values outside the range are
@@ -398,6 +400,9 @@ class Canvas(device.Device):
 
         """
         style = param.check_keys(style)
+        x = np.array(x)
+        if bins is None:
+            bins = histmod.guess_bins(x)
         hist, bin_edges = np.histogram(x, bins=bins, range=range,
                                        weights=weights, density=density)
 

@@ -26,7 +26,6 @@ enhancements
   implemented using the parent_height argument of param.get().  But
   what are the font sizes relative to?
 - Should the box centers or the box boundaries be labeled in histograms?
-- Auto-detect integer data for histograms?
 - Choose a nicer style for the sphinx HTML output.
 - implement box plots
 - if one of the functions which create axes (e.g. `Canvas.plot()`) is
@@ -41,3 +40,5 @@ enhancements
 - pixel-align the axis box (and maybe the tick marks?)
 - in the parameter description, be clear whether dimensions are widths
   or half-widths.
+- allow for the data to go slightly beyond the outermost axis labels
+  (e.g. a histogram of {-1, 0, 1}-valued data should not label -2)

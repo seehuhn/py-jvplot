@@ -386,8 +386,9 @@ class Axes(device.Device):
     def draw_histogram(self, hist, bin_edges, *, style=None):
         """
         Args:
-            hist (array): the data to plot.
-            bin_edges (array): a vector of bin edges.
+            hist (array): the y-coordinates of the tops of the histogram bars.
+            bin_edges (array): the x-coordinates of the bin edges (must be
+                one element longer than `hist`).
             style (dict): graphics parameter values to override the
                 canvas settings, setting the line thickness and color.
 
