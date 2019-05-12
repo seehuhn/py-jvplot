@@ -130,7 +130,7 @@ def _check_coords(x, y):
     if len(y.shape) != 1:
         raise ValueError('y has wrong shape %s' % repr(y.shape))
     if len(x) != len(y):
-        tmpl = 'x and y have incompatible length: %d != %d'
+        tmpl = 'x and y have incompatible lengths: %d != %d'
         raise ValueError(tmpl % (len(x), len(y)))
     return x, y
 
