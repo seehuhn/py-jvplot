@@ -17,8 +17,8 @@ using `setup.py` to install the package::
 Usage
 -----
 
-The JvPlot package is work in progress.  So far, only scatter plots
-are implemented.  A simple example plot can be generated as follows::
+The JvPlot package is work in progress.  A simple example plot can be
+generated as follows::
 
     import numpy as np
 

@@ -140,7 +140,7 @@ penalty for the x-axis is composed of four individual components:
 Calculation of the penalty vector is implemented by the following
 internal function:
 
-.. automethod:: coords.Linear.penalties
+.. autoclass:: coords.AxisPenalties
 
 The total penalty for the x-axis is then
 

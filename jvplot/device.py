@@ -261,16 +261,20 @@ class Device:
                     upper = b
                 continue
 
-            # try whether `arg` is iterable
-            try:
-                for a2 in arg:
-                    a, b = Device.data_range(a2)
-                    if a < lower:
-                        lower = a
-                    if b > upper:
-                        upper = b
-            except TypeError:
-                raise TypeError(f"invalid data range {arg!r}")
+            if not isinstance(arg, str):
+                # try whether `arg` is iterable
+                try:
+                    for a2 in arg:
+                        a, b = Device.data_range(a2)
+                        if a < lower:
+                            lower = a
+                        if b > upper:
+                            upper = b
+                    continue
+                except TypeError:
+                    pass
+            raise TypeError(f"invalid data range {arg!r}")
+
         if lower > upper:
             raise ValueError("no data range specified")
         return lower, upper

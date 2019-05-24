@@ -31,6 +31,7 @@ Modules
 The JvPlot package is composed of the following main modules:
 
 * :py:mod:`jvplot.plot`
+* :py:mod:`jvplot.axes`
 * :py:mod:`jvplot.canvas`
 * :py:mod:`jvplot.param`
 
