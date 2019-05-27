@@ -44,7 +44,7 @@ class Device:
 
     def __init__(self, ctx, rect, *, res, parent=None, style=None):
         """Create a new Device object.
-        
+
         Args:
             ctx ():
             rect ():
@@ -140,7 +140,7 @@ class Device:
     def get_margin_rect(self, *, style=None):
         """Return the rectangle `[x, y, w, h]` defined by the margin graphics
         parameters, in device coordinates.
-        
+
         Args:
             style ():
 
@@ -163,7 +163,7 @@ class Device:
 
     def text_width(self, text, font_size):
         """Returns the width of the text's bounding box.
-        
+
         Args:
             text ():
             font_size ():
@@ -178,7 +178,7 @@ class Device:
 
     def font_height(self, font_size):
         """Returns the height of the tallest character in the font.
-        
+
         Args:
             font_size ():
 
@@ -255,7 +255,7 @@ class Device:
     @staticmethod
     def data_range(*args):
         """Determine the range of all (finite) values in `args`.
-        
+
         Args:
             *args: All arguments are flattened.  The flattened version
                 must consists of numeric values, and the range of the

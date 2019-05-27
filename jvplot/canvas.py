@@ -42,23 +42,23 @@ class Canvas(device.Device):
 
     def __init__(self, ctx, rect, *, res, style=None, parent=None):
         """Create a new canvas object.
-        
+
         Args:
             ctx (Cairo drawing context): The Cairo context used to draw
                 the figure.
-        
+
             rect (list of length 4): The extent of the drawing area, in
                device coordinates.  The four values `x, y, w, h = rect`
                represent the horizontal and vertical position of the
                drawing area on the page, and the width and hight of the
                drawing area, respectively.
-        
+
             res (number): Resolution of the device, *i.e.* the number of
                 device coordinate units per inch.
-        
+
             style (dict, optional): Graphics parameters to override the
                default values.
-        
+
             parent (Device, optional): used internally, for graphics
                parameters with value `"inherit"`.
 
@@ -117,7 +117,7 @@ class Canvas(device.Device):
              x_lim=None, y_lim=None, aspect=None, x_lab=None, y_lab=None,
              style=None):
         """Draw a line plot.
-        
+
         Args:
             x (array with ``shape=(n,)`` or ``shape=(n,2)``): The
                 vertex coordinates of the lines.  If `y` is
@@ -131,14 +131,16 @@ class Canvas(device.Device):
             rect ():
             x_extra ():
             y_extra ():
-            x_lim ():
-            y_lim ():
+            x_lim (tuple): a pair of numbers, specifying the lower and upper
+                coordinate range for the horizontal axis.
+            y_lim (tuple): a pair of numbers, specifying the lower and upper
+                coordinate range for the vertical axis.
             aspect (number): The aspect ratio of the axes area; 1
                 makes circles shown as circles, values >=1 turn
                 circles into ellipses wider than high, and values <=1
                 turn circles into ellipses higher than wide.
-            x_lab ():
-            y_lab ():
+            x_lab (str): the axis label for the vertical axis.
+            x_lab (str): the axis label for the vertical axis.
             style (dict): graphics parameter values to override the
                 canvas settings, setting the line thickness and color.
 
@@ -158,7 +160,7 @@ class Canvas(device.Device):
                      aspect=None, x_lim=None, y_lim=None, rect=None,
                      x_lab=None, y_lab=None, style=None):
         """Draw a scatter plot.
-        
+
         Args:
             x (array with ``shape=(n,)`` or ``shape=(n,2)``): The
                 vertex coordinates of the points.  If `y` is
@@ -178,8 +180,8 @@ class Canvas(device.Device):
             x_lim (tuple): the horizontal coordinate range.
             y_lim (tuple): the vertical coordinate range.
             rect ():
-            x_lab ():
-            y_lab ():
+            x_lab (str): the axis label for the vertical axis.
+            x_lab (str): the axis label for the vertical axis.
             style (dict): graphics parameter values to override the
                 canvas settings, setting the line thickness and color.
 
@@ -200,7 +202,7 @@ class Canvas(device.Device):
                   x_lim=None, y_lim=None, aspect=None, x_lab=None,
                   y_lab=None, style=None):
         """Draw a band plot.
-        
+
         Args:
             x ():
             y_mid ():
@@ -210,11 +212,16 @@ class Canvas(device.Device):
             rect ():
             x_extra ():
             y_extra ():
-            x_lim ():
-            y_lim ():
-            aspect ():
-            x_lab ():
-            y_lab ():
+            x_lim (tuple): a pair of numbers, specifying the lower and upper
+                coordinate range for the horizontal axis.
+            y_lim (tuple): a pair of numbers, specifying the lower and upper
+                coordinate range for the vertical axis.
+            aspect (number): The aspect ratio of the axes; a value of 1
+                displays mathematical circles visually as circles, values >1
+                show circles as ellipses wider than high, and values <1 show
+                circles as ellipses higher than wide.
+            x_lab (str): the axis label for the vertical axis.
+            x_lab (str): the axis label for the vertical axis.
             style ():
 
         """
@@ -248,7 +255,7 @@ class Canvas(device.Device):
     def grid_plot(self, x_ranges, y_ranges=None, *, x_names=None, y_names=None,
                   upper_fn=None, diag_fn=None, lower_fn=None, style=None):
         """Create a grid of axes with aligned coordinate ranges.
-        
+
         Args:
             x_ranges ():
             y_ranges ():
@@ -370,7 +377,7 @@ class Canvas(device.Device):
     def pair_scatter_plot(self, z, *, names=None, upper_fn=None, diag_fn=None,
                           lower_fn=None, style=None):
         """Create a new pair scatter plot.
-        
+
         Args:
             z ():
             names ():
@@ -409,10 +416,10 @@ class Canvas(device.Device):
                   x_extra=None, y_extra=None, x_lim=None, y_lim=None,
                   x_lab=None, y_lab=None, rect=None, style=None):
         """Draw a histogram.
-        
+
         The arguments `x`, `bins`, `range`, `weights`, and `density`
         have the same meaning as for `numpy.histogram`.
-        
+
         Args:
             x (array_like): Input data. The histogram is computed over
                 the flattened array.
@@ -440,10 +447,12 @@ class Canvas(device.Device):
                 function.
             x_extra ():
             y_extra ():
-            x_lim ():
-            y_lim ():
-            x_lab ():
-            y_lab ():
+            x_lim (tuple): a pair of numbers, specifying the lower and upper
+                coordinate range for the horizontal axis.
+            y_lim (tuple): a pair of numbers, specifying the lower and upper
+                coordinate range for the vertical axis.
+            x_lab (str): the axis label for the vertical axis.
+            x_lab (str): the axis label for the vertical axis.
             rect ():
             style (dict): graphics parameter values to override the
                 canvas settings, setting the line thickness and color.
@@ -467,21 +476,24 @@ class Canvas(device.Device):
     def image(self, pixels, x_range=None, y_range=None, *, aspect=None,
               x_lab=None, y_lab=None, rect=None, style=None):
         """Plot a raster image inside coordinate axes.
-        
+
         The array ``pixels`` gives the pixel intensities, as RGB
         intensities in the range [0, 1].  The array must have the
         shape ``pix_height x pix_width x 3``, where the last
         coordinate indicates the colour channels in the order red,
         green, blue.
-        
+
         Args:
             pixels (array): the pixel intensities, in the form described
                 above.
             x_range (tuple of length 2):
             y_range (tuple of length 2):
-            aspect ():
-            x_lab ():
-            y_lab ():
+            aspect (number): The aspect ratio of the axes; a value of 1
+                displays mathematical circles visually as circles, values >1
+                show circles as ellipses wider than high, and values <1 show
+                circles as ellipses higher than wide.
+            x_lab (str): the axis label for the vertical axis.
+            x_lab (str): the axis label for the vertical axis.
             rect ():
             style (dict, optional): Default plot graphics values for the
                 canvas.
@@ -504,16 +516,21 @@ class Canvas(device.Device):
              aspect=None, rect=None, x_lab=None, y_lab=None, style=None):
         """Draw a set of coordinate axes and return a new Axes object
         representing the data area inside the axes.
-        
+
         Args:
             x_range (tuple): the horizontal coordinate range.
             y_range (tuple): the vertical coordinate range.
-            x_lim (tuple): the horizontal coordinate range.
-            y_lim (tuple): the vertical coordinate range.
-            aspect ():
+            x_lim (tuple): a pair of numbers, specifying the lower and upper
+                coordinate range for the horizontal axis.
+            y_lim (tuple): a pair of numbers, specifying the lower and upper
+                coordinate range for the vertical axis.
+            aspect (number): The aspect ratio of the axes; a value of 1
+                displays mathematical circles visually as circles, values >1
+                show circles as ellipses wider than high, and values <1 show
+                circles as ellipses higher than wide.
             rect():
-            x_lab ():
-            y_lab ():
+            x_lab (str): the axis label for the vertical axis.
+            x_lab (str): the axis label for the vertical axis.
             style (dict): graphics parameter values to override the
                 canvas settings, setting the line thickness and color.
                 The parameters in `style` are also used as the default
@@ -529,14 +546,15 @@ class Canvas(device.Device):
     def color_bar(self, color_scale, *, rect=None, discrete=False, steps=100,
                   y_lab=None, style=None):
         """Draw a colour bar onto the canvas.
-        
+
         Args:
             color_scale ():
             rect ():
             discrete ():
             steps ():
-            y_lab ():
+            x_lab (str): the axis label for the vertical axis.
             style ():
+            x_lab (str): the axis label for the vertical axis.
 
         """
         style = param.check_keys(style)
@@ -572,7 +590,7 @@ class Canvas(device.Device):
         return the sub-canvas corresponding to column ``idx % cols``
         and row ``idx // cols`` (where both row and column counts
         start with 0).
-        
+
         Args:
             cols (int): Number of columns.
             rows (int): Number of rows.

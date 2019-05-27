@@ -19,6 +19,29 @@ _args = _parser.parse_args()
 _DOCSTRING_RE = re.compile(r'(.*?\n *)""".*?"""\n', re.DOTALL)
 
 
+DOC_DEFAULT = {
+    'x_lim': [
+        "    x_lim (tuple): a pair of numbers, specifying the lower and upper",
+        "        coordinate range for the horizontal axis."
+    ],
+    'y_lim': [
+        "    y_lim (tuple): a pair of numbers, specifying the lower and upper",
+        "        coordinate range for the vertical axis."
+    ],
+    'x_lab': [
+        "    x_lab (str): the axis label for the horizontal axis."
+    ],
+    'y_lab': [
+        "    x_lab (str): the axis label for the vertical axis."
+    ],
+    'aspect': [
+        "    aspect (number): The aspect ratio of the axes; a value of 1",
+        "        displays mathematical circles visually as circles, values >1",
+        "        show circles as ellipses wider than high, and values <1 show",
+        "        circles as ellipses higher than wide.",
+    ]
+}
+
 def drop_prefix(text, prefix):
     if text.startswith(prefix):
         return text[len(prefix):]
@@ -373,11 +396,14 @@ def fix_args(old_args, real_args, module_file, lineno):
     used = set()
     for arg in real_args:
         used.add(arg)
+
+        empty = [f"    {arg} ():"]
+        default = DOC_DEFAULT.get(arg, empty)
+
         ll = arg_lines.get(arg)
-        if ll:
-            res.extend(ll)
-        else:
-            res.append(f"    {arg} ():")
+        if not ll or ll == empty:
+            ll = default
+        res.extend(ll)
     for arg, ll in arg_lines.items():
         if arg in used:
             continue
@@ -479,7 +505,7 @@ def _main():
             doc_lines = fix_docstring(docstring, args, module_file, lineno)
             pfx = " " * (col + 4)
             parts.append(pfx + '"""' + doc_lines[0] + "\n")
-            parts.extend(pfx + l + "\n" for l in doc_lines[1:])
+            parts.extend((pfx + l).rstrip() + "\n" for l in doc_lines[1:])
             parts.append("\n")
             parts.append(pfx + '"""\n')
 

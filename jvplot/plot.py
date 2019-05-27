@@ -28,38 +28,31 @@ class Plot(canvas.Canvas):
 
     """The Plot Class represents a file containing a single figure.
 
-    Args:
-        file_name (string): The name of the file the figure will be
-            stored in.  Any previously existing file with this name
-            will be overwritten.  The file name extension determines
-            the file type.  Available file types are `.pdf`, `.ps`,
-            `.eps` and `.png`.
-
-        width: The figure width.  This can either be a number to give
-            the width in device units (pixels), or a string including
-            a length unit like "10cm".
-
-        height: The figure height.  This can either be a number to
-            give the height in device units (pixels), or a string
-            including a length unit like "10cm".
-
-        res (number, optional): For raster image formats, `res`
-            specifies the device resolution in pixels per inch.
-
-        style (dict, optional): Default plot graphics values for the
-            figure.
-
     """
 
     def __init__(self, file_name, width, height=None, *, res=None, style={}):
         """Create a new plot.
-        
+
         Args:
-            file_name ():
-            width ():
-            height ():
-            res ():
-            style ():
+            file_name (string): The name of the file the figure will be
+                stored in.  Any previously existing file with this name
+                will be overwritten.  The file name extension determines
+                the file type.  Available file types are `.pdf`, `.ps`,
+                `.eps` and `.png`.
+
+            width: The figure width.  This can either be a number to give
+                the width in device units (pixels), or a string including
+                a length unit like "10cm".
+
+            height: The figure height.  This can either be a number to
+                give the height in device units (pixels), or a string
+                including a length unit like "10cm".
+
+            res (number, optional): For raster image formats, `res`
+                specifies the device resolution in pixels per inch.
+
+            style (dict, optional): Default plot graphics values for the
+                figure.
 
         """
 

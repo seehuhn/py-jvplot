@@ -43,7 +43,7 @@ class Axes(device.Device):
 
     def __init__(self, parent, rect, x_lim, y_lim, *, style=None):
         """Create a new Axes object.
-        
+
         Args:
             parent    The canvas these axes should be drawn on.
             rect      The position of the axes on the parent canvas.
@@ -80,7 +80,7 @@ class Axes(device.Device):
 
     def decorate(self, *, style=None):
         """Draw the axes border rectangle.
-        
+
         Args:
             style ():
 
@@ -195,7 +195,7 @@ class Axes(device.Device):
     def data_to_dev_x(self, x_data):
         """Convert a value from data coordinate to horizontal device
         coordinates.
-        
+
         Args:
             x_data ():
 
@@ -205,7 +205,7 @@ class Axes(device.Device):
     def data_to_dev_y(self, y_data):
         """Convert a value from data coordinate to vertical device
         coordinates.
-        
+
         Args:
             y_data ():
 
@@ -214,11 +214,11 @@ class Axes(device.Device):
 
     def draw_lines(self, x, y=None, *, style=None):
         """Draw polygonal line segments.
-        
+
         The given vertices are connected by a chain of line segments.
         Vertices where at least one of the coordinates is ``nan`` are
         ignored and the line is interupted where such vertices occur.
-        
+
         Args:
             x (array with ``shape=(n,)`` or ``shape=(n,2)``): The
                 vertex coordinates of the line segments.  If `y` is
@@ -308,7 +308,7 @@ class Axes(device.Device):
 
     def draw_rectangle(self, rects, *, style=None):
         """Draw one or more rectangles.
-        
+
         Args:
             rects ():
             style ():
@@ -343,7 +343,9 @@ class Axes(device.Device):
         self.draw_lines(x, y_upper)
 
     def draw_points(self, x, y=None, *, style=None):
-        """Args:
+        """Draw a scatter plot.
+
+        Args:
             x ():
             y ():
             style (dict): graphics parameter values to override the
@@ -378,7 +380,7 @@ class Axes(device.Device):
                   vertical_align="baseline", rotate=0, rotate_deg=None,
                   padding=["1pt", "3pt"], style=None):
         """Add text to a canvas.
-        
+
         Args:
             text (str): The text to add to the canvas.
             x: Horizontal position of the text in data coordinates.
@@ -413,7 +415,9 @@ class Axes(device.Device):
                         padding=padding)
 
     def draw_histogram(self, hist, bin_edges, *, style=None):
-        """Args:
+        """Draw a histogram.
+
+        Args:
             hist (array): the y-coordinates of the tops of the histogram bars.
             bin_edges (array): the x-coordinates of the bin edges (must be
                 one element longer than `hist`).
@@ -449,7 +453,7 @@ class Axes(device.Device):
 
     def draw_affine(self, *, x=None, y=None, a=None, b=None, style=None):
         """Draw a straight line.
-        
+
         Args:
             x (number): if `x` is not ``None``, draw a vertical line at
                 horizontal position `x` (in data coordinates).
@@ -510,25 +514,20 @@ class Axes(device.Device):
 
     def draw_image(self, pixels, x_range=None, y_range=None, *, style=None):
         """Draw a raster image onto the canvas.
-        
+
         The array ``pixels`` gives the pixel intensities, as RGB
         intensities in the range [0, 1].  The array must have the
         shape ``pix_height x pix_width x 3``, where the last
         coordinate indicates the colour channels in the order red,
         green, blue.
-        
-        args:
+
+        Args:
             pixels (array): the pixel intensities, in the form described
                 above.
-            ...
-            style (dict, optional): Default plot graphics values for the
-                canvas.
-        
-        Args:
-            pixels ():
             x_range ():
             y_range ():
-            style ():
+            style (dict, optional): Default plot graphics values for the
+                canvas.
 
         """
         style = param.check_keys(style)
@@ -561,7 +560,7 @@ class Axes(device.Device):
         y0 = self.data_to_dev_y(y_range[0])
         y1 = self.data_to_dev_y(y_range[1])
 
-        # copy the source image onto the Axes surface
+        # copy the source image to the Cairo surface
         self.ctx.save()
         self.ctx.translate(x0, y0)
         self.ctx.scale((x1-x0)/pix_w, (y1-y0)/pix_h)
