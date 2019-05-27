@@ -11,8 +11,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-"""A Simple Library for Creating Plots Programatically
-===================================================
+"""A Simple Library for Creating Plots Programmatically
+====================================================
 
 :copyright: 2014, Jochen Voss
 :license: GPL version 3 or newer, see LICENSE for more details

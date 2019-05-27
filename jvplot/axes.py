@@ -39,16 +39,19 @@ class Axes(device.Device):
     optionally, can draw boxes, tick marks, tick labels, and axis
     labels.
 
-    Args:
-
-        parent    The canvas these axes should be drawn on.
-        rect      The position of the axes on the parent canvas.
-        x_lim     The horizontal range of data coordinates spanned.
-        y_lim     The vertical range of data coordinates spanned.
-
     """
 
     def __init__(self, parent, rect, x_lim, y_lim, *, style=None):
+        """Create a new Axes object.
+        
+        Args:
+            parent    The canvas these axes should be drawn on.
+            rect      The position of the axes on the parent canvas.
+            x_lim     The horizontal range of data coordinates spanned.
+            y_lim     The vertical range of data coordinates spanned.
+            style ():
+
+        """
         # allocate a new drawing context for the viewport
         parent_ctx = parent.ctx
         surface = parent_ctx.get_target()
@@ -76,6 +79,12 @@ class Axes(device.Device):
         self.scale = (x_scale, y_scale)
 
     def decorate(self, *, style=None):
+        """Draw the axes border rectangle.
+        
+        Args:
+            style ():
+
+        """
         style = param.check_keys(style)
 
         col = self._get_param('axis_border_col', style)
@@ -184,18 +193,32 @@ class Axes(device.Device):
         ctx.restore()
 
     def data_to_dev_x(self, x_data):
+        """Convert a value from data coordinate to horizontal device
+        coordinates.
+        
+        Args:
+            x_data ():
+
+        """
         return self.offset[0] + x_data * self.scale[0]
 
     def data_to_dev_y(self, y_data):
+        """Convert a value from data coordinate to vertical device
+        coordinates.
+        
+        Args:
+            y_data ():
+
+        """
         return self.offset[1] + y_data * self.scale[1]
 
     def draw_lines(self, x, y=None, *, style=None):
         """Draw polygonal line segments.
-
+        
         The given vertices are connected by a chain of line segments.
         Vertices where at least one of the coordinates is ``nan`` are
         ignored and the line is interupted where such vertices occur.
-
+        
         Args:
             x (array with ``shape=(n,)`` or ``shape=(n,2)``): The
                 vertex coordinates of the line segments.  If `y` is
@@ -284,6 +307,13 @@ class Axes(device.Device):
         self.ctx.restore()
 
     def draw_rectangle(self, rects, *, style=None):
+        """Draw one or more rectangles.
+        
+        Args:
+            rects ():
+            style ():
+
+        """
         style = param.check_keys(style)
         rects = np.array(rects, dtype=np.float64)
         self._draw_rectangle(rects, style)
@@ -313,8 +343,7 @@ class Axes(device.Device):
         self.draw_lines(x, y_upper)
 
     def draw_points(self, x, y=None, *, style=None):
-        """
-        Args:
+        """Args:
             x ():
             y ():
             style (dict): graphics parameter values to override the
@@ -349,7 +378,7 @@ class Axes(device.Device):
                   vertical_align="baseline", rotate=0, rotate_deg=None,
                   padding=["1pt", "3pt"], style=None):
         """Add text to a canvas.
-
+        
         Args:
             text (str): The text to add to the canvas.
             x: Horizontal position of the text in data coordinates.
@@ -384,8 +413,7 @@ class Axes(device.Device):
                         padding=padding)
 
     def draw_histogram(self, hist, bin_edges, *, style=None):
-        """
-        Args:
+        """Args:
             hist (array): the y-coordinates of the tops of the histogram bars.
             bin_edges (array): the x-coordinates of the bin edges (must be
                 one element longer than `hist`).
@@ -421,7 +449,7 @@ class Axes(device.Device):
 
     def draw_affine(self, *, x=None, y=None, a=None, b=None, style=None):
         """Draw a straight line.
-
+        
         Args:
             x (number): if `x` is not ``None``, draw a vertical line at
                 horizontal position `x` (in data coordinates).
@@ -482,19 +510,25 @@ class Axes(device.Device):
 
     def draw_image(self, pixels, x_range=None, y_range=None, *, style=None):
         """Draw a raster image onto the canvas.
-
+        
         The array ``pixels`` gives the pixel intensities, as RGB
         intensities in the range [0, 1].  The array must have the
         shape ``pix_height x pix_width x 3``, where the last
         coordinate indicates the colour channels in the order red,
         green, blue.
-
+        
         args:
             pixels (array): the pixel intensities, in the form described
                 above.
             ...
             style (dict, optional): Default plot graphics values for the
                 canvas.
+        
+        Args:
+            pixels ():
+            x_range ():
+            y_range ():
+            style ():
 
         """
         style = param.check_keys(style)

@@ -24,7 +24,6 @@ import cairocffi as cairo
 
 from . import canvas, util, param
 
-
 class Plot(canvas.Canvas):
 
     """The Plot Class represents a file containing a single figure.
@@ -53,7 +52,16 @@ class Plot(canvas.Canvas):
     """
 
     def __init__(self, file_name, width, height=None, *, res=None, style={}):
-        """Create a new plot."""
+        """Create a new plot.
+        
+        Args:
+            file_name ():
+            width ():
+            height ():
+            res ():
+            style ():
+
+        """
 
         self.file_name = file_name
         """The output file name, as given in the ``file_name`` argument of the

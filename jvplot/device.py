@@ -42,7 +42,17 @@ class Device:
 
     """
 
-    def __init__(self, ctx, rect, *, res, style=None, parent=None):
+    def __init__(self, ctx, rect, *, res, parent=None, style=None):
+        """Create a new Device object.
+        
+        Args:
+            ctx ():
+            rect ():
+            res ():
+            parent ():
+            style ():
+
+        """
         if parent is None:
             style = param.update(param.ROOT, style)
         else:
@@ -130,6 +140,9 @@ class Device:
     def get_margin_rect(self, *, style=None):
         """Return the rectangle `[x, y, w, h]` defined by the margin graphics
         parameters, in device coordinates.
+        
+        Args:
+            style ():
 
         """
         style = param.check_keys(style)
@@ -149,7 +162,13 @@ class Device:
         return [x, y, w, h]
 
     def text_width(self, text, font_size):
-        """Returns the widths of the text bounding box."""
+        """Returns the width of the text's bounding box.
+        
+        Args:
+            text ():
+            font_size ():
+
+        """
         self.ctx.save()
         self.ctx.set_font_matrix(
             cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
@@ -158,6 +177,12 @@ class Device:
         return ext[2]
 
     def font_height(self, font_size):
+        """Returns the height of the tallest character in the font.
+        
+        Args:
+            font_size ():
+
+        """
         self.ctx.save()
         self.ctx.set_font_matrix(
             cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
@@ -229,6 +254,14 @@ class Device:
 
     @staticmethod
     def data_range(*args):
+        """Determine the range of all (finite) values in `args`.
+        
+        Args:
+            *args: All arguments are flattened.  The flattened version
+                must consists of numeric values, and the range of the
+                collection of all these numbers is returned.
+
+        """
         lower = np.inf
         upper = -np.inf
         for arg in args:
