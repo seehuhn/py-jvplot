@@ -137,6 +137,46 @@ class Device:
             return str(value)
         raise NotImplementedError("parameter type '%s'" % info[0])
 
+    def debug_style(self, *, style=None):
+        keys = []
+        vals = []
+        defaults = []
+        descs = []
+        for key, (tp, default, desc) in param.DEFAULT.items():
+            val = self._get_param(key, style=style)
+
+            if tp == "col":
+                r, g, b, a = val
+                r2, g2, b2 = int(r*255+.5), int(g*255+.5), int(b*255+.5)
+                try_names = [n for n, c in color.names.items() if c == (r2, g2, b2)]
+                if a == 0:
+                    val = "transparent"
+                elif a == 1 and try_names:
+                    val = try_names[0]
+                elif a == 1:
+                    val = f"rgb({r2},{g2},{b2})"
+                else:
+                    val = f"rgba({r2},{g2},{b2},{a:g})"
+            elif tp in ["dim", "width", "height"]:
+                val = f"{val/self.res*72.27:.1f}pt"
+
+            keys.append(key)
+            vals.append(str(val))
+            defaults.append(str(default))
+            descs.append(desc)
+
+        ll = [max(len(s) for s in ss) for ss in [keys, vals, defaults, descs]]
+        ll0 = ll[:-1] + [0]
+        def p(fields):
+            print(" | ".join("%-*s" % (l, f) for l, f in zip(ll0, fields)))
+
+        print()
+        p(["key", "value", "default", "description"])
+        print("-+-".join("-"*l for l in ll))
+        for fields in zip(keys, vals, defaults, descs):
+            p(fields)
+
+
     def get_margin_rect(self, *, style=None):
         """Return the rectangle `[x, y, w, h]` defined by the margin graphics
         parameters, in device coordinates.
@@ -199,25 +239,14 @@ class Device:
         p_bottom = util.convert_dim(padding[2], self.res, self.rect[3])
         p_left = util.convert_dim(padding[3], self.res, self.rect[2])
 
-        ctx = ctx or self.ctx
+        lines = text.splitlines()
+        baseline_skip = 1.2 * font_size
 
+        ctx = ctx or self.ctx
         ctx.save()
         ctx.set_font_matrix(
             cairo.Matrix(font_size, 0, 0, -font_size, 0, 0))
 
-        ext = ctx.text_extents(text)
-        if horizontal_align == "start":
-            x_offs = 0
-        elif horizontal_align == "end":
-            x_offs = -ext[4]
-        elif horizontal_align == "left":
-            x_offs = -ext[0]
-        elif horizontal_align == "right":
-            x_offs = -ext[0] - ext[2]
-        elif horizontal_align == "center":
-            x_offs = -ext[0] - .5 * ext[2]
-        else:
-            x_offs = util.convert_dim(horizontal_align, self.res, ext[2])
         ascent, descent, line_height, _, _ = ctx.font_extents()
         if vertical_align == "baseline":
             y_offs = 0
@@ -226,30 +255,48 @@ class Device:
         elif vertical_align == "bottom":
             y_offs = descent
         elif vertical_align == "center":
-            y_offs = (descent - ascent) / 2
+            y_offs = (descent - ascent) / 2 + (len(lines) - 1) * baseline_skip / 2
         else:
             y_offs = util.convert_dim(vertical_align, self.res, line_height)
 
-        if bg_col is not None and bg_col[3] > 0:
-            ctx.save()
-            ctx.set_source_rgba(*bg_col)
+        for i, line in enumerate(lines):
+            ext = ctx.text_extents(line)
+            if horizontal_align == "start":
+                x_offs = 0
+            elif horizontal_align == "end":
+                x_offs = -ext[4]
+            elif horizontal_align == "left":
+                x_offs = -ext[0]
+            elif horizontal_align == "right":
+                x_offs = -ext[0] - ext[2]
+            elif horizontal_align == "center":
+                x_offs = -ext[0] - .5 * ext[2]
+            else:
+                x_offs = util.convert_dim(horizontal_align, self.res, ext[2])
+
+            if bg_col is not None and bg_col[3] > 0:
+                ctx.save()
+                ctx.set_source_rgba(*bg_col)
+                ctx.move_to(x, y)
+                ctx.rotate(rotate)
+                ctx.rel_move_to(ext[0] + x_offs - p_left,
+                                ext[1] + y_offs - p_bottom)
+                ctx.rel_line_to(ext[2] + p_left + p_right, 0)
+                ctx.rel_line_to(0, ext[3] + p_bottom + p_top)
+                ctx.rel_line_to(- ext[2] - p_right - p_left, 0)
+                ctx.close_path()
+                ctx.fill()
+                ctx.restore()
+            if col:
+                ctx.set_source_rgba(*col)
+
             ctx.move_to(x, y)
             ctx.rotate(rotate)
-            ctx.rel_move_to(ext[0] + x_offs - p_left,
-                            ext[1] + y_offs - p_bottom)
-            ctx.rel_line_to(ext[2] + p_left + p_right, 0)
-            ctx.rel_line_to(0, ext[3] + p_bottom + p_top)
-            ctx.rel_line_to(- ext[2] - p_right - p_left, 0)
-            ctx.close_path()
-            ctx.fill()
-            ctx.restore()
+            ctx.rel_move_to(x_offs, y_offs)
+            ctx.show_text(line)
 
-        if col:
-            ctx.set_source_rgba(*col)
-        ctx.move_to(x, y)
-        ctx.rotate(rotate)
-        ctx.rel_move_to(x_offs, y_offs)
-        ctx.show_text(text)
+            y_offs -= baseline_skip
+
         ctx.restore()
 
     @staticmethod

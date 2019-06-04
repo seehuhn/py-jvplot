@@ -650,7 +650,8 @@ class Canvas(device.Device):
         padding_right = self._get_param('padding_right', style,
                                         use_default=True)
         tick_font_size = self._get_param('tick_font_size', style)
-        opt_spacing = self._get_param('axis_tick_opt_spacing', style)
+        opt_spacing_x = self._get_param('axis_tick_spacing_x', style)
+        opt_spacing_y = self._get_param('axis_tick_spacing_y', style)
 
         get_width = lambda lab: self.text_width(lab, tick_font_size)
         get_height = lambda lab: self.font_height(tick_font_size)
@@ -662,10 +663,10 @@ class Canvas(device.Device):
             raise ValueError("padding too large, not enough space")
         x_penalties = coords.AxisPenalties(w, data_range=x_range,
                                            label_width_fn=get_width,
-                                           dev_tick_dist=opt_spacing)
+                                           dev_tick_dist=opt_spacing_x)
         y_penalties = coords.AxisPenalties(h, data_range=y_range,
                                            label_width_fn=get_height,
-                                           dev_tick_dist=opt_spacing)
+                                           dev_tick_dist=opt_spacing_y)
         x_sff = coords.LinScaleFactoryFactory()
         y_sff = coords.LinScaleFactoryFactory(pad=True)
 

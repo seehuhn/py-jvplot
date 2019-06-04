@@ -188,7 +188,7 @@ class AxisPenalties:
         if self.dev_tick_dist is not None:
             mean_dist = np.mean(np.array(ticks[1:]) - np.array(ticks[:-1]))
             dev_dist = mean_dist * scale
-            pp.append(abs(math.log(dev_dist / self.dev_tick_dist, 5)))
+            pp.append(7*abs(math.log(dev_dist / self.dev_tick_dist, 5)))
 
         # make sure the ticks cover most of the axis range
         l = (ticks[0] - a) / (b - a)
