@@ -231,7 +231,6 @@ def find_best(sff, penalties, *, axis_lim=None, axis_len=None):
 
 
 def _scale_length(k):
-
     """Get the scale length k.
 
     Scale lengths are indexed by integers k, and are ..., 0.1, 0.2,
