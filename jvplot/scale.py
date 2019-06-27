@@ -49,7 +49,7 @@ class Linear:
             if len(ticks) >= 2:
                 yield ticks, self._labels(ticks)
 
-    def over(self, a, b, constraint):
+    def over(self, a, b, constraint=None):
         a_width = self._get_aspect(constraint)
         if a_width:
             step = self._smallest_scale_larger_than(a_width)

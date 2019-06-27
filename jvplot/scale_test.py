@@ -29,7 +29,7 @@ def test_linear_ticks_within():
 
     for a, b in [(0.01, 4.99), (-0.01, 5.01), (0, 1), (-1, 1), (0, 3.14159265)]:
         count = 0
-        for ticks, _ in l.ticks_within(a, b):
+        for ticks, _ in l.within(a, b):
             assert len(ticks) >= 2
             assert ticks[0] >= a
             assert ticks[-1] <= b
@@ -47,7 +47,7 @@ def test_linear_ticks_over():
         print()
         print(a, b)
         count = 0
-        for ticks, _ in l.ticks_over(a, b):
+        for ticks, _ in l.over(a, b):
             print(ticks)
             assert len(ticks) >= 2
             assert ticks[0] <= a

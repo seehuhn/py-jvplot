@@ -15,7 +15,7 @@ def test_layout_2d():
                        dev_width_fn=lambda s: 9,
                        scale=s)
     l = layout.Layout2D(lx, ly)
-    l.fix(aspect=0.1)
+    l.fix(aspect=.01)
 
     print()
     print(lx.ticks)
