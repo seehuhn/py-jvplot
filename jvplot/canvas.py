@@ -24,10 +24,11 @@ import numpy as np
 import cairocffi as cairo
 
 from . import axes
-from . import coords
 from . import device
 from . import hist as histmod
+from . import layout
 from . import param
+from . import scale
 from . import util
 
 
@@ -657,42 +658,25 @@ class Canvas(device.Device):
         get_height = lambda lab: self.font_height(tick_font_size)
 
         _, _, w, h = rect
-        w -= padding_left + padding_right
-        h -= padding_bottom + padding_top
-        if w <= 0 or h <= 0:
+        if w <= padding_left + padding_right or h <= padding_top + padding_bottom:
             raise ValueError("padding too large, not enough space")
-        x_penalties = coords.AxisPenalties(w, data_range=x_range,
-                                           label_width_fn=get_width,
-                                           dev_tick_dist=opt_spacing_x)
-        y_penalties = coords.AxisPenalties(h, data_range=y_range,
-                                           label_width_fn=get_height,
-                                           dev_tick_dist=opt_spacing_y)
-        x_sff = coords.LinScaleFactoryFactory()
-        y_sff = coords.LinScaleFactoryFactory(pad=True)
 
-        if aspect is None:
-            _, xa, xt = coords.find_best(x_sff, x_penalties, axis_lim=x_lim)
-            _, ya, yt = coords.find_best(y_sff, y_penalties, axis_lim=y_lim)
-        else:
-            if x_lim and y_lim:
-                raise ValueError("cannot set aspect, x_lim and y_lim together")
-            xx = x_lim if x_lim else x_range
-            x_unit_length = w / (xx[1] - xx[0])
-            yy = y_lim if y_lim else y_range
-            y_unit_length = h / (yy[1] - yy[0])
-            if x_lim or (x_unit_length <= aspect * y_unit_length and not y_lim):
-                _, xa, xt = coords.find_best(x_sff, x_penalties, axis_lim=x_lim)
-                y_len = h / w * (xa[1] - xa[0]) * aspect
-                _, ya, yt = coords.find_best(y_sff, y_penalties, axis_len=y_len)
-            else:
-                _, ya, yt = coords.find_best(y_sff, y_penalties, axis_lim=y_lim)
-                x_len = w / h * (ya[1] - ya[0]) / aspect
-                _, xa, xt = coords.find_best(x_sff, x_penalties, axis_len=x_len)
+        s = scale.Linear()
+        lx = layout.Layout(w, (padding_left, padding_right), x_range,
+                           lim=x_lim,
+                           dev_opt_dist=opt_spacing_x,
+                           dev_width_fn=get_width,
+                           can_shift=True,
+                           scale=s)
+        ly = layout.Layout(320, (padding_bottom, padding_top), y_range,
+                           dev_opt_dist=opt_spacing_y,
+                           dev_width_fn=get_height,
+                           scale=s)
+        l = layout.Layout2D(lx, ly)
+        l.fix(aspect=aspect)
 
-        qx = (xa[1] - xa[0]) / w
-        qy = (ya[1] - ya[0]) / h
-        xa = (xa[0] - padding_left * qx, xa[1] + padding_right * qx)
-        ya = (ya[0] - padding_bottom * qy, ya[1] + padding_top * qy)
+        xa = lx.data_margins()
+        ya = ly.data_margins()
         ax = axes.Axes(self, rect, xa, ya, style=style)
 
         style = style.copy()
@@ -704,13 +688,13 @@ class Canvas(device.Device):
             for pos in 'bt':
                 if pos not in ticks.lower():
                     continue
-                x_labels = x_sff.labels(xt) if pos.upper() in ticks else None
-                ax._draw_ticks(xt, x_labels, pos, style)
+                x_labels = lx.labels if pos.upper() in ticks else None
+                ax._draw_ticks(lx.ticks, x_labels, pos, style)
             for pos in 'lr':
                 if pos not in ticks.lower():
                     continue
-                y_labels = y_sff.labels(yt) if pos.upper() in ticks else None
-                ax._draw_ticks(yt, y_labels, pos, style)
+                y_labels = ly.labels if pos.upper() in ticks else None
+                ax._draw_ticks(ly.ticks, y_labels, pos, style)
 
             for pos in 'bt':
                 if not x_lab or pos not in labels:

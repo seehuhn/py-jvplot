@@ -16,11 +16,11 @@ class Layout:
 
         Args:
             dev_width (number): axis length in device units.
-            dev_padding (number): width of padding at both edges, in
+            dev_padding (padding): width of padding at both edges, in
                 device coordinates.
-            data_range (2-tuple): the minimum and maximum data value
+            data_range (pair): the minimum and maximum data value
                 to cover.
-            lim (2-tuple, optional): a pair (x0, x1), where x0 is the
+            lim (pair, optional): a pair (x0, x1), where x0 is the
                 data value corresponding to the inside of the
                 left/bottom margin, and x1 is the data value for the
                 inside of the right/top margin.
@@ -38,8 +38,12 @@ class Layout:
                 labels.
 
         """
+        dev_pad_l, dev_pad_r = dev_padding
+
         self.dev_width = dev_width
-        self.dev_padding = dev_padding
+        self.dev_pad_l = dev_pad_l
+        self.dev_pad_r = dev_pad_r
+        self.dev_inner = dev_width - dev_pad_l - dev_pad_r
         self.data_range = data_range
         self.lim = lim
         self.ticks = ticks
@@ -51,39 +55,15 @@ class Layout:
 
         self.shift = None
 
-    def ticks_within(self, a, b, constraint=None, *, num=5):
-        count = 0
-        for ticks, labels in self.scale.within(a, b, constraint):
-            yield ticks, labels
-            count += 1
-            if count >= num:
-                break
-
-    def ticks_over(self, a, b, constraint=None, *, num=5):
-        count = 0
-        for ticks, labels in self.scale.over(a, b, constraint):
-            yield ticks, labels
-            count += 1
-            if count >= num:
-                break
-
-    def set_limits(self, constraint=None):
-        a, b = self.data_range
-        if self.ticks:
-            if self.ticks[0] < a:
-                a = self.ticks[0]
-            if self.ticks[-1] > b:
-                b = self.ticks[-1]
-        self.lim = self.scale.limits(a, b, constraint)
-
     def range_penalty(self):
         penalty = 0
-        rel_pad = self.dev_padding / (self.dev_width - 2*self.dev_padding)
+        rel_pad_l = self.dev_pad_l / self.dev_inner
+        rel_pad_r = self.dev_pad_r / self.dev_inner
 
         x0, x1 = self.lim
         left = (self.data_range[0] - x0) / (x1 - x0)
         right = (x1 - self.data_range[1]) / (x1 - x0)
-        for val in [left, right]:
+        for val, rel_pad in [(left, rel_pad_l), (right, rel_pad_r)]:
             if val < -rel_pad:
                 penalty += 100 + abs(val) - rel_pad
             elif val < 0:
@@ -102,7 +82,7 @@ class Layout:
 
         x0, x1 = self.lim
 
-        w = self.dev_width - 2*self.dev_padding
+        w = self.dev_inner
         q = w / (x1 - x0)
         dev_opt_dist = self.dev_opt_dist
 
@@ -128,8 +108,8 @@ class Layout:
         dev_width_fn = self.dev_width_fn
         x0, x1 = self.lim
 
-        q = (self.dev_width - 2*self.dev_padding) / (x1 - x0)
-        pos = [self.dev_padding + (xi - x0)*q for xi in self.ticks]
+        q = self.dev_inner / (x1 - x0)
+        pos = [self.dev_pad_l + (xi - x0)*q for xi in self.ticks]
         widths = [dev_width_fn(si) for si in self.labels]
 
         sep = dev_width_fn("10")
@@ -171,6 +151,15 @@ class Layout:
         # print(self.labels, p1, p2, p3)
         return p1 + p2 + p3
 
+    def data_margins(self):
+        """Return the data coordinates of the outer edges of the plot
+        (outside the margins).
+
+        """
+        a, b = self.lim
+        q = (b - a) / self.dev_inner
+        return (a - self.dev_pad_l * q, b + self.dev_pad_r * q)
+
 class Layout2D:
 
     def __init__(self, x_layout, y_layout):
@@ -188,18 +177,45 @@ class Layout2D:
             self._fix_one("y")
             return
 
-        x_unit = self.x.dev_width / _d(self.x.data_range)
-        y_unit = self.y.dev_width / _d(self.y.data_range)
-        if not self.need_x_lim or (self.need_y_lim and x_unit <= aspect * y_unit):
-            self._fix_one("x")
-            dy = self.y.dev_width / self.x.dev_width * _d(self.x.lim) * aspect
-            self._fix_one("y", constraint=dict(aspect=dy))
-        else:
-            self._fix_one("y")
-            dx = self.x.dev_width / self.y.dev_width * _d(self.y.lim) / aspect
-            self._fix_one("x", constraint=dict(aspect=dx))
+        if not self.need_x_lim and not self.need_y_lim:
+            raise ValueError("cannot fix aspect ratio and both axes")
 
-    def _fix_one(self, axis, constraint=None):
+        if self.need_y_lim:
+            px = self._fix_one("x")
+            w = self.y.dev_width / self.x.dev_width * _d(self.x.lim) * aspect
+            py = self._fix_one("y", width=w)
+            pxy = math.sqrt(px**2 + py**2)
+            best_x_ticks = self.x.ticks
+            best_x_labels = self.x.labels
+            best_x_shift = self.x.shift
+            best_x_lim = self.x.lim
+            best_y_ticks = self.y.ticks
+            best_y_labels = self.y.labels
+            best_y_shift = self.y.shift
+            best_y_lim = self.y.lim
+        else:
+            pxy = math.inf
+
+        if self.need_x_lim:
+            py = self._fix_one("y")
+            w = self.x.dev_width / self.y.dev_width * _d(self.y.lim) / aspect
+            px = self._fix_one("x", width=w)
+            pyx = math.sqrt(px**2 + py**2)
+        else:
+            pyx = math.inf
+
+        if pxy < pyx:
+            self.x.ticks = best_x_ticks
+            self.x.labels = best_x_labels
+            self.x.shift = best_x_shift
+            self.x.lim = best_x_lim
+            self.y.ticks = best_y_ticks
+            self.y.labels = best_y_labels
+            self.y.shift = best_y_shift
+            self.y.lim = best_y_lim
+
+
+    def _fix_one(self, axis, *, width=None):
         assert axis in ["x", "y"]
         if axis == "x":
             need_lim = self.need_x_lim
@@ -210,47 +226,60 @@ class Layout2D:
             need_ticks = self.need_y_ticks
             layout = self.y
 
+        if width is not None and not need_lim:
+            raise ValueError("cannot combine fixed limits with fixed width")
+
         #  need_lim | need_ticks |
         # ----------+------------+--------------------------------------------
-        #  True     | True       | try ticks_within(data) and ticks_over(data),
+        #  True     | True       | try ticks(data),
         #           |            |     compute limits from from ticks
         #  True     | False      | compute limits from from ticks
-        #  False    | True       | try ticks_within(limits)
+        #  False    | True       | try ticks(limits, allow_outside=False)
         #  False    | False      | -
 
         best_penalty = np.inf
         best_ticks = layout.ticks
         best_labels = layout.labels
+        best_shift = layout.shift
         best_lim = layout.lim
         if need_lim and need_ticks:
-            cand = itertools.chain(
-                layout.ticks_within(*layout.data_range, constraint),
-                layout.ticks_over(*layout.data_range, constraint))
-            for layout.ticks, layout.labels in cand:
-                layout.set_limits(constraint)
+            cand = itertools.islice(
+                layout.scale.ticks(*layout.data_range, width=width),
+                10)
+            for layout.lim, layout.ticks, layout.labels in cand:
                 penalty = layout.penalty()
                 if penalty < best_penalty:
                     best_penalty = penalty
                     best_ticks = layout.ticks
                     best_labels = layout.labels
+                    best_shift = layout.shift
                     best_lim = layout.lim
         elif need_lim:
-            layout.set_limits(constraint)
+            a = min(layout.data_range[0], layout.ticks[0])
+            b = max(layout.data_range[1], layout.ticks[-1])
+            if width is not None:
+                layout.lim = ((a + b - width) / 2, (a + b + width) / 2)
+            else:
+                layout.lim = (a, b)
             best_penalty = layout.penalty()
+            best_shift = layout.shift
             best_lim = layout.lim
         elif need_ticks:
-            cand = layout.ticks_within(*layout.lim, constraint)
-            for layout.ticks, layout.labels in cand:
+            cand = itertools.islice(
+                layout.scale.ticks(*layout.lim, allow_outside=False, width=width),
+                10)
+            for _, layout.ticks, layout.labels in cand:
                 penalty = layout.penalty()
                 if penalty < best_penalty:
                     best_penalty = penalty
-                    best_ticks = layout.ticks
-                    best_labels = layout.labels
+                    best_shift = layout.shift
         else:
             best_penalty = layout.penalty()
+            best_shift = layout.shift
 
         layout.ticks = best_ticks
         layout.labels = best_labels
+        layout.shift = best_shift
         layout.lim = best_lim
         return best_penalty
 

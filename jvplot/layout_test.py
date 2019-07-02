@@ -4,7 +4,7 @@ from . import layout, scale
 
 def test_layout_2d():
     s = scale.Linear()
-    lx = layout.Layout(520, 10, (0.9, 2.2),
+    lx = layout.Layout(520, 10, (90, 220),
                        lim=(0, 3),
                        dev_opt_dist=100,
                        dev_width_fn=lambda s: 5*len(s),
@@ -15,11 +15,8 @@ def test_layout_2d():
                        dev_width_fn=lambda s: 9,
                        scale=s)
     l = layout.Layout2D(lx, ly)
-    l.fix(aspect=.01)
+    l.fix(aspect=300/500)
 
     print()
-    print(lx.ticks)
-    print(lx.labels)
-
-    print(ly.ticks)
-    print(ly.labels)
+    print(lx.lim, lx.labels)
+    print(ly.lim, ly.labels)

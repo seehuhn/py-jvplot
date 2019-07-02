@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-# scales.py - code to generate axis ticks and labels
+# scale.py - code to generate axis ticks and labels
 # Copyright (C) 2019 Jochen Voss <voss@seehuhn.de>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -15,59 +15,104 @@
 import math
 
 
+_FUDGE = 1e-6
+
+
 class Linear:
 
-    def __init__(self, pad=False):
-        self.pad = pad
+    def __init__(self, pad_labels=False):
+        self.pad_labels = pad_labels
 
-    def limits(self, a, b, constraint=None):
-        a_width = self._get_aspect(constraint)
-        if a_width:
-            m = (a + b) / 2
-            return m - a_width / 2, m + a_width / 2
-        return a, b
+    def ticks(self, a, b, *, allow_outside=True, width=None):
+        if width is not None:
+            return self.ticks_for_width(a, b, width)
+        return self.ticks_for_interval(a, b, allow_outside=allow_outside)
 
-    def within(self, a, b, constraint=None):
-        a_width = self._get_aspect(constraint)
-        if a_width:
-            step = self._smallest_scale_larger_than(a_width)
-        else:
-            step = self._smallest_scale_larger_than(b - a)
+    def ticks_for_width(self, a, b, width):
+        """Generate lists of ticks for an interval of width `width`."""
 
+        step = self._smallest_scale_larger_than(width)
         while True:
             step -= 1
 
             dx = self._scale_length(step)
-            ia = math.ceil(a / dx)
-            ib = math.floor(b / dx)
-            while a_width and (ib - ia) * dx > a_width:
+            ia = math.floor(a / dx)
+            ib = math.ceil(b / dx)
+
+            eps = dx * _FUDGE
+
+            while (ib - ia + 1) * dx <= width: # we can squeeze in more ticks
+                if a - ia * dx <= ib * dx - b:
+                    ia -= 1
+                else:
+                    ib += 1
+
+            while ((ib - ia) * dx > width # the tick interval is too wide
+                   or b - a <= width + eps and (ib * dx - a > width + eps
+                                                or b - ia * dx > width + eps)):
                 if a - ia * dx > ib * dx - b:
                     ia += 1
                 else:
                     ib -= 1
-            ticks = [i * dx for i in range(ia, ib+1)]
-            if len(ticks) >= 2:
-                yield ticks, self._labels(ticks)
+            if ib - ia + 1 < 2:
+                continue
 
-    def over(self, a, b, constraint=None):
-        a_width = self._get_aspect(constraint)
-        if a_width:
-            step = self._smallest_scale_larger_than(a_width)
-        else:
-            step = self._smallest_scale_larger_than(b - a)
+            left = ia * dx
+            right = ib * dx
+            gap = width - right + left
+            # minimize p => (left - p*gap - a)**2 + (right + (1-p)*gap - b)**2:
+            # the derivative is
+            #   -2*gap*(left - p*gap - a) - 2*gap*(right + (1-p)*gap - b)
+            #   == -2*gap*(left - p*gap - a) - 2*gap*(right + gap - p*gap - b)
+            #   == -2*gap*(left + right - (2*p - 1)*gap - a - b)
+            # and thus the minimum satisfies
+            p = ((left + right - a - b) / gap + 1) / 2 if gap > eps else 0
+            if p <= 0:
+                right = left + width
+            elif p >= 1:
+                left = right - width
+            else:
+                left -= p * gap
+                right += (1 - p) * gap
+
+            lim = [left, right]
+            ticks = [i * dx for i in range(ia, ib+1)]
+            labels = self._labels(ticks)
+            yield lim, ticks, labels
+
+    def ticks_for_interval(self, a, b, *, allow_outside=True):
+        """Generate lists of ticks for the interval [a,b]."""
+
+        step = self._smallest_scale_larger_than(b - a)
+        # At step size `step`, at most one tick can be inside the
+        # range.
 
         while True:
             dx = self._scale_length(step)
             ia = math.floor(a / dx)
             ib = math.ceil(b / dx)
-            while a_width and (ib - ia + 1) * dx < a_width:
-                if a - ia * dx < ib * dx - b:
-                    ia -= 1
+            # Initially, there are two ticks outside (a, b).
+
+            eps = dx * _FUDGE
+            for _ in range(3):
+                if ib+1 - ia < 2:
+                    break
+                all_inside = ia*dx + eps >= a and ib*dx - eps <= b
+                if allow_outside or all_inside:
+                    lim = (min(ia * dx, a), max(ib * dx, b))
+                    ticks = [i * dx for i in range(ia, ib+1)]
+                    labels = self._labels(ticks)
+                    yield lim, ticks, labels
+
+                if all_inside:
+                    break
+
+                # remove the tick which is furthest out
+                if a - ia * dx > ib * dx - b:
+                    ia += 1
                 else:
-                    ib += 1
-            ticks = [i * dx for i in range(ia, ib+1)]
-            if len(ticks) >= 2:
-                yield ticks, self._labels(ticks)
+                    ib -= 1
+
             step -= 1
 
     def _labels(self, ticks):
@@ -84,7 +129,7 @@ class Linear:
             for a, b in parts:
                 b = b.ljust(max_digits, '0')
                 ll.append(a + '.' + b)
-        if self.pad:
+        if self.pad_labels:
             max_len = max(len(l) for l in ll)
             ll = [l.rjust(max_len) for l in ll]
         return ll
@@ -113,15 +158,3 @@ class Linear:
         if Linear._scale_length(k) <= x:
             k += 1
         return k
-
-    @staticmethod
-    def _get_aspect(constraint):
-        aspect = None
-        if constraint:
-            for key, val in constraint.items():
-                if key == "aspect":
-                    aspect = val
-                else:
-                    msg = f"cannot use constraint {key!r} for linear scales"
-                    raise ValueError(msg)
-        return aspect
