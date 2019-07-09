@@ -1,14 +1,17 @@
+TODO List
+=========
+
 API design
 ----------
 
 - rationalize the parameter names.  For example, does the "plot" in
   "plot_point_col" make sense?
+- be more systematic about the order of arguments
 - swap the row/column arguments of Canvas.subplot()?
   Or use a two-dimensional argument to select the subplot?
-- reconsider the split between "param.py" and "util.py"
-- be more systematic about the order of arguments
 - set up graphics parameters so that `ax.draw_...(..., style=dict(col='red'))`
   works as expected
+- reconsider the split between "param.py" and "util.py"
 
 bug fixes
 ---------
@@ -18,27 +21,25 @@ bug fixes
 enhancements
 ------------
 
+- if values are integers, prefer integer-valued labels
+- allow for the data to go slightly beyond the outermost axis labels
+  (e.g. a histogram of {-1, 0, 1}-valued data should not label -2)
+- Should the box centers or the box boundaries be labeled in histograms?
+- pixel-align the axis box (and maybe the tick marks?)
+- autogenerate doc-strings for configuration parameters
+- in the parameter descriptions, be clear whether dimensions are
+  widths or half-widths.
 - implement logarithmic axes
 - add support for custom tick label formats, e.g. for dates.
   In "demo2.py" use multiples of pi for the x-axis labels.
+- Choose a nicer style for the sphinx HTML output.
+- implement box plots
+- make it easy to label the lines created by `draw_affine()`
+- add support for embedded figure legends
+- allow to draw several lines in one call to `draw_affine`
+- can we get away with only keeping the changed keys in `param.update`?
+- add support for images with 1 or 4 channels
 - implement minor axis ticks
 - Implement units 'em' and 'en'.  Relative font sizes can be easily
   implemented using the parent_height argument of param.get().  But
   what are the font sizes relative to?
-- Should the box centers or the box boundaries be labeled in histograms?
-- Choose a nicer style for the sphinx HTML output.
-- implement box plots
-- if one of the functions which create axes (e.g. `Canvas.plot()`) is
-  called a second time, switch to a new page?
-- make it easy to label the lines created by `draw_affine()`
-- add support for embedded figure legends
-- if values are integers, prefer integer-valued labels
-- allow to draw several lines in one call to `draw_affine`
-- can we get away with only keeping the changed keys in `param.update`?
-- autogenerate doc-strings for configuration parameters
-- add support for images with 1 or 4 channels
-- pixel-align the axis box (and maybe the tick marks?)
-- in the parameter description, be clear whether dimensions are widths
-  or half-widths.
-- allow for the data to go slightly beyond the outermost axis labels
-  (e.g. a histogram of {-1, 0, 1}-valued data should not label -2)
