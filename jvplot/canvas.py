@@ -668,7 +668,7 @@ class Canvas(device.Device):
                            dev_width_fn=get_width,
                            can_shift=True,
                            scale=s)
-        ly = layout.Layout(320, (padding_bottom, padding_top), y_range,
+        ly = layout.Layout(h, (padding_bottom, padding_top), y_range,
                            dev_opt_dist=opt_spacing_y,
                            dev_width_fn=get_height,
                            scale=s)
