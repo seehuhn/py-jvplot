@@ -65,7 +65,11 @@ def test_canvas_param():
 def test_axes():
     with plot.Plot('/dev/null', '3in', '5in') as pl:
         with pytest.raises(ValueError):
+            # need {x,y}_range or {x,y}_lim
             pl.axes()
+
+        # try axes with limits but no data range
+        ax = pl.axes(x_lim=[0, 1], y_lim=[0, 1])
 
 def test_plot_aspect():
     for asp in [.5, 1, 2]:
@@ -78,3 +82,10 @@ def test_axes_aspect():
         with plot.Plot('/dev/null', '3in', '5in') as pl:
             ax = pl.axes(x_range=[0, 1], y_range=[0, 2], aspect=asp)
             assert ax.scale[0]/ax.scale[1] == pytest.approx(asp)
+
+def test_grid_plot():
+    ranges = [(0,1), (0,1), (1,2)]
+    m = len(ranges)
+    with plot.Plot('/dev/null', '3in', '5in') as pl:
+        grid = pl.grid_plot(ranges)
+        assert grid.shape == (m, m)

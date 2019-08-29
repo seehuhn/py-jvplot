@@ -23,7 +23,8 @@ class Layout:
             lim (pair, optional): a pair (x0, x1), where x0 is the
                 data value corresponding to the inside of the
                 left/bottom margin, and x1 is the data value for the
-                inside of the right/top margin.
+                inside of the right/top margin.  If this is set,
+                automatic scaling is disabled.
             ticks (list of numbers, optional): a list of data
                 coordinate for the axis ticks.
             dev_opt_dist (number, optional): optimal tick distance in
@@ -39,6 +40,9 @@ class Layout:
 
         """
         dev_pad_l, dev_pad_r = dev_padding
+
+        if not lim and not data_range:
+            raise ValueError("cannot omit both data_range and lim")
 
         self.dev_width = dev_width
         self.dev_pad_l = dev_pad_l
@@ -56,6 +60,9 @@ class Layout:
         self.shift = None
 
     def range_penalty(self):
+        if self.lim and not self.data_range:
+            return 0
+
         penalty = 0
         rel_pad_l = self.dev_pad_l / self.dev_inner
         rel_pad_r = self.dev_pad_r / self.dev_inner
@@ -148,7 +155,6 @@ class Layout:
         p1 = self.range_penalty()
         p2 = self.tick_penalty()
         p3 = self.label_penalty()
-        # print(self.labels, p1, p2, p3)
         return p1 + p2 + p3
 
     def data_margins(self):
@@ -272,6 +278,8 @@ class Layout2D:
                 penalty = layout.penalty()
                 if penalty < best_penalty:
                     best_penalty = penalty
+                    best_ticks = layout.ticks
+                    best_labels = layout.labels
                     best_shift = layout.shift
         else:
             best_penalty = layout.penalty()

@@ -152,8 +152,8 @@ class Canvas(device.Device):
         x_range = self.data_range(x, x_extra)
         y_range = self.data_range(y, y_extra)
         rect = rect or self.get_margin_rect(style=style)
-        ax = self._add_axes(rect, x_range, y_range, x_lim, y_lim, aspect, style,
-                            x_lab=x_lab, y_lab=y_lab)
+        ax = self._add_axes(rect, x_range, y_range, x_lim, y_lim,
+                            aspect, style, x_lab=x_lab, y_lab=y_lab)
         ax.draw_lines(x, y)
         return ax
 
@@ -266,6 +266,9 @@ class Canvas(device.Device):
             diag_fn ():
             lower_fn ():
             style ():
+
+        Returns:
+            A two-dimensional array, containing the axes created.
 
         """
         style = param.check_keys(style)
@@ -519,12 +522,14 @@ class Canvas(device.Device):
         representing the data area inside the axes.
 
         Args:
-            x_range (tuple): the horizontal coordinate range.
-            y_range (tuple): the vertical coordinate range.
-            x_lim (tuple): a pair of numbers, specifying the lower and upper
-                coordinate range for the horizontal axis.
-            y_lim (tuple): a pair of numbers, specifying the lower and upper
-                coordinate range for the vertical axis.
+            x_range (tuple): The horizontal coordinate range to cover.
+                The actual axis range may be larger than this.
+            y_range (tuple): The vertical coordinate range to cover.
+                The actual axis range chosen may be larger than this.
+            x_lim (tuple): The exact coordinate range for the
+                horizontal axis.
+            y_lim (tuple): The exact coordinate range for the vertical
+                axis.
             aspect (number): The aspect ratio of the axes; a value of 1
                 displays mathematical circles visually as circles, values >1
                 show circles as ellipses wider than high, and values <1 show
@@ -669,6 +674,7 @@ class Canvas(device.Device):
                            can_shift=True,
                            scale=s)
         ly = layout.Layout(h, (padding_bottom, padding_top), y_range,
+                           lim=y_lim,
                            dev_opt_dist=opt_spacing_y,
                            dev_width_fn=get_height,
                            scale=s)

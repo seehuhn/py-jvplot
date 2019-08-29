@@ -38,7 +38,7 @@ The JvPlot package is composed of the following main modules:
 """
 
 __title__ = 'jvplot'
-__version__ = '0.3'
+__version__ = '0.3.1'
 __author__ = 'Jochen Voss'
 __license__ = 'GPLv3+'
 __copyright__ = 'Copyright (c) 2014-2018 Jochen Voss'
